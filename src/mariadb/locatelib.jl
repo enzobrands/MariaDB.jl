@@ -5,7 +5,7 @@ let
     if !isdefined(:mariadb_lib)
         @linux_only   lib_choices = ["libmariadbclient", "libmariadbclient.so" ]
         @windows_only lib_choices = ["libmariadb", "libmariadb.lib"]
-        @osx_only     lib_choices = ["libmariadbclient.dylib","libmariadbclient"]
+        @osx_only     lib_choices = ["libmysqlclient.dylib","libmysqlclient"]
         local lib
         for lib in lib_choices
             try
