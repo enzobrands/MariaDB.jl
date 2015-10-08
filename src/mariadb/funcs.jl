@@ -274,21 +274,23 @@ Returns C_NULL if no row is available.
 - **result** a result set identifier returned by *mysql_store_result()* or *mysql_use_result()*.
 """
 function mysql_fetch_row(result::MYSQL_RES)
-    row = ByteString[]
+    #row = ByteString[]
+    row = IOBuffer()
     num_fields = ccall( (:mysql_num_fields, mariadb_lib), Cuint, (Ptr{Void},), result)
     ptr = ccall( (:mysql_fetch_row, mariadb_lib), Ptr{Ptr{Uint8}}, (Ptr{Void},), result)
     if (ptr == C_NULL)
         return C_NULL
     end
     for i in 1:num_fields
-        data = bytestring(unsafe_load(ptr,i))
+        #data = bytestring(unsafe_load(ptr,i))
+        data = Vector{UInt8}(unsafe_load(ptr,i))
         if data == C_NULL
-            push!(row, "")
+            write(row, "")
         else
-            push!(row, data)
+            write(row, data)
         end
     end
-    return row
+    return row.data
 end
 
 """
