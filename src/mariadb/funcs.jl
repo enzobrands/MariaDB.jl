@@ -1164,7 +1164,7 @@ The client library supports the following character sets:
 - **csname** character set name
 """
 mysql_set_character_set(mysql::MYSQL, csname::String) = ccall(
-    (:mysql_set_character_set, mariadb_lib), Cint, (Ptr{Void}, Ptr{Void}), mysql, csname)
+    (:mysql_set_character_set, mariadb_lib), Cint, (Ptr{Void}, Ptr{UInt8}), mysql, csname)
 
 """
 # Description
@@ -1400,7 +1400,7 @@ export  mysql_affected_rows, mysql_autocommit, mysql_change_user, mysql_characte
         mysql_next_result, mysql_num_fields, mysql_num_rows, mysql_options, mysql_ping, mysql_query,
         mysql_real_connect, mysql_real_escape_string, mysql_real_query, mysql_refresh,
         mysql_rollback, mysql_row_seek, mysql_row_tell, mysql_select_db, mysql_send_query,
-        mysql_server_end, mysql_server_init, mysql_set_charactr_set, mysql_set_server_option,
+        mysql_server_end, mysql_server_init, mysql_set_character_set, mysql_set_server_option,
         mysql_shutdown, mysql_sqlstate, mysql_ssl_set, mysql_stat, mysql_store_result,
         mysql_thread_end, mysql_thread_id, mysql_thread_init, mysql_thread_safe, mysql_use_result,
         mysql_warning_count
