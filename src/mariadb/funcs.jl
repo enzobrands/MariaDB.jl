@@ -1,3 +1,9 @@
+# These functions link to the LGPL 2.1 licensed MariaDB Connector/C library
+# The documentation of the functions is derived from:
+# https://mariadb.com/kb/en/mariadb/mariadb-connector-c
+# The Julia wrapper functions are:
+# Copyright (c) 2015 Dynactionize NV
+
 """
 # Description
 
@@ -16,9 +22,8 @@ records.
 - **mysql** a mysql handle, identifier, which was previously allocated by *mysql_init()* or
   *mysql_real_connect()*.
 """
-mysql_affected_rows(mysql::MYSQL) = ccall( (:mysql_affected_rows, mariadb_lib),
-                                            Culonglong, (Ptr{Void}, ),
-                                            mysql)
+mysql_affected_rows(mysql::MYSQL) =
+    ccall( (:mysql_affected_rows, mariadb_lib), Culonglong, (Ptr{Void}, ), mysql.ptr)
 
 """
 # Description
@@ -37,9 +42,9 @@ function will not work if autocommit mode is switched on.
   *mysql_real_connect()*.
 - **auto_mode** whether to turn autocommit on or not.
 """
-mysql_autocommit(mysql::MYSQL, auto_mode::Bool) = ccall( (:mysql_autocommit, mariadb_lib),
-                                                          Cchar, (Ptr{Void}, Cchar),
-                                                          mysql, (auto_mode ? Int8(1) : Int8(0)))
+mysql_autocommit(mysql::MYSQL, auto_mode::Bool) =
+    ccall( (:mysql_autocommit, mariadb_lib), Cchar, (Ptr{Void}, Cchar),
+           mysql.ptr, Int8(auto_mode)) != 0
 
 """
 # Description
@@ -67,9 +72,9 @@ unlocking all locked tables.
   changing the user and not selecting a database. To select a database in this case use the
   *mysql_select_db()* function.
 """
-mysql_change_user(mysql::MYSQL, user::AbstractString, passwd::AbstractString, db::AbstractString = "") = ccall(
-    (:mysql_change_user, mariadb_lib), Cchar, (Ptr{Void}, Cstring, Cstring, Cstring),
-    mysql, user, passwd, (db == "" ? C_NULL : db))
+mysql_change_user(mysql::MYSQL, user::ByteString, passwd::ByteString, db::ByteString = "") =
+    ccall((:mysql_change_user, mariadb_lib), Cchar, (Ptr{Void}, Cstring, Cstring, Cstring),
+          mysql.ptr, user, passwd, (db == "" ? C_NULL : db))
 
 """
 # Description
@@ -82,7 +87,7 @@ Returns the default client character set for the specified connection.
   *mysql_real_connect()*.
 """
 mysql_character_set_name(mysql::MYSQL) = bytestring(
-    ccall( (:mysql_character_set_name, mariadb_lib), Cstring, (Ptr{Void},), mysql))
+    ccall( (:mysql_character_set_name, mariadb_lib), Cstring, (Ptr{Void},), mysql.ptr))
 
 """
 # Description
@@ -94,7 +99,7 @@ Closes a previously opened connection.
 - **mysql** a mysql handle, identifier, which was previously allocated by *mysql_init()* or
   *mysql_real_connect()*.
 """
-mysql_close(mysql::MYSQL) = ccall( (:mysql_close, mariadb_lib), Void, (Ptr{Void},), mysql)
+mysql_close(mysql::MYSQL) = ccall( (:mysql_close, mariadb_lib), Void, (Ptr{Void},), mysql.ptr)
 
 """
 # Description
@@ -110,7 +115,7 @@ or insert statements following mysql_commit() will be rolled back when the conne
 - **mysql** a mysql handle, identifier, which was previously allocated by *mysql_init()* or
   *mysql_real_connect()*.
 """
-mysql_commit(mysql::MYSQL) = ccall( (:mysql_commit, mariadb_lib), Cchar, (Ptr{Void},), mysql)
+mysql_commit(mysql::MYSQL) = ccall( (:mysql_commit, mariadb_lib), Cchar, (Ptr{Void},), mysql.ptr)
 
 """
 # Description
@@ -126,9 +131,8 @@ This function can only be used with buffered result sets obtained from the use o
 - **result** a result set identifier returned by *mysql_store_result()*.
 - **offset** the field offset. Must be between 1 and the total number of rows.
 """
-mysql_data_seek(result::MYSQL_RES, offset::UInt64) = ccall( (:mysql_data_seek, mariadb_lib),
-                                                             Void, (Ptr{Void}, Culonglong),
-                                                             result, offset-1)
+mysql_data_seek(result::MYSQL_RES, offset::UInt64) =
+    ccall( (:mysql_data_seek, mariadb_lib), Void, (Ptr{Void}, Culonglong), result.ptr, offset-1)
 
 """
 # Description
@@ -143,8 +147,8 @@ Returns MYSQL_OK on success, nonzero if an error occurred.
 - **mysql** a mysql handle, identifier, which was previously allocated by *mysql_init()* or
   *mysql_real_connect()*.
 """
-mysql_dump_debug_info(mysql::MYSQL) = ccall( (:mysql_dump_debug_info, mariadb_lib),
-                                              Cint, (Ptr{Void},), mysql)
+mysql_dump_debug_info(mysql::MYSQL) =
+    ccall( (:mysql_dump_debug_info, mariadb_lib), Cint, (Ptr{Void},), mysql.ptr)
 
 """
 # Description
@@ -157,7 +161,7 @@ no error occurred.
 - **mysql** a mysql handle, identifier, which was previously allocated by *mysql_init()* or
   *mysql_real_connect()*.
 """
-mysql_errno(mysql::MYSQL) = ccall( (:mysql_errno, mariadb_lib), Cuint, (Ptr{Void},), mysql)
+mysql_errno(mysql::MYSQL) = ccall( (:mysql_errno, mariadb_lib), Cuint, (Ptr{Void},), mysql.ptr)
 
 """
 # Description
@@ -170,8 +174,8 @@ error occurred an empty string is returned.
 - **mysql** a mysql handle, identifier, which was previously allocated by *mysql_init()* or
   *mysql_real_connect()*.
 """
-mysql_error(mysql::MYSQL) = bytestring(
-    ccall( (:mysql_error, mariadb_lib), Cstring, (Ptr{Void},), mysql))
+mysql_error(mysql::MYSQL) =
+    bytestring(ccall( (:mysql_error, mariadb_lib), Cstring, (Ptr{Void},), mysql.ptr))
 
 """
 # Description
@@ -187,10 +191,9 @@ In case only information for a specific field is required the field can be selec
 
 - **result** a result set identifier returned by *mysql_store_result()* or *mysql_use_result()*.
 """
-function mysql_fetch_field(result::MYSQL_RES)
-    ptr = ccall( (:mysql_fetch_field, mariadb_lib), Ptr{_MYSQL_FIELD_}, (Ptr{Void},), result)
-    return MYSQL_FIELD(unsafe_load(ptr, 1))
-end
+mysql_fetch_field(result::MYSQL_RES) =
+    MYSQL_FIELD(unsafe_load(ccall( (:mysql_fetch_field, mariadb_lib), Ptr{_MYSQL_FIELD_},
+                                   (Ptr{Void},), result.ptr), 1))
 
 """
 # Description
@@ -204,14 +207,13 @@ an array. Each field contains the definition for a column of the result set.
 - **result** a result set identifier returned by *mysql_store_result()* or *mysql_use_result()*.
 """
 function mysql_fetch_fields(result::MYSQL_RES)
-    fields = MYSQL_FIELD[]
-    num_fields = ccall( (:mysql_num_fields, mariadb_lib), Cuint, (Ptr{Void},), result)
-    ptr = ccall( (:mysql_fetch_fields, mariadb_lib), Ptr{_MYSQL_FIELD_}, (Ptr{Void},), result)
+    num_fields = ccall( (:mysql_num_fields, mariadb_lib), Cuint, (Ptr{Void},), result.ptr)
+    fields = Vector{MYSQL_FIELD}(num_fields)
+    ptr = ccall( (:mysql_fetch_fields, mariadb_lib), Ptr{_MYSQL_FIELD_}, (Ptr{Void},), result.ptr)
     for i in 1:num_fields
-        field = MYSQL_FIELD(unsafe_load(ptr,i))
-        push!(fields, field)
+        fields[i] = MYSQL_FIELD(unsafe_load(ptr,i))
     end
-    return fields
+    fields
 end
 
 """
@@ -227,11 +229,10 @@ The total number of fields can be obtained by *mysql_field_count()* or *mysql_nu
 - **result** a result set identifier returned by *mysql_store_result()* or *mysql_use_result()*.
 - **fieldnr** the field number. This value must be within the range from 1 to number of fields.
 """
-function mysql_fetch_field_direct(result::MYSQL_RES, fieldnr::UInt)
-    ptr = ccall( (:mysql_fetch_field_direct, mariadb_lib), Ptr{_MYSQL_FIELD_}, (Ptr{Void}, Cuint),
-                  result, fieldnr-1)
-    return MYSQL_FIELD(unsafe_load(ptr, 1))
-end
+mysql_fetch_field_direct(result::MYSQL_RES, fieldnr::UInt) =
+    MYSQL_FIELD(unsafe_load(ccall( (:mysql_fetch_field_direct, mariadb_lib),
+                                   Ptr{_MYSQL_FIELD_}, (Ptr{Void}, Cuint),
+                                   result.ptr, fieldnr-1), 1))
 
 """
 # Description
@@ -248,12 +249,9 @@ array if you call it before calling *mysql_fetch_row()* or after retrieving all 
 - **result** a result set identifier returned by *mysql_store_result()* or *mysql_use_result()*.
 """
 function mysql_fetch_lengths(result::MYSQL_RES)
-    num_fields = ccall( (:mysql_num_fields, mariadb_lib), Cuint, (Ptr{Void},), result)
-    ptr = ccall( (:mysql_fetch_lengths, mariadb_lib), Ptr{Culong}, (Ptr{Void},), result)
-    if (ptr != C_NULL)
-        return pointer_to_array(ptr, num_fields)
-    end
-    return UInt[]
+    num_fields = ccall( (:mysql_num_fields, mariadb_lib), Cuint, (Ptr{Void},), result.ptr)
+    ptr = ccall( (:mysql_fetch_lengths, mariadb_lib), Ptr{Culong}, (Ptr{Void},), result.ptr)
+    ptr == C_NULL ? Culong[] : pointer_to_array(ptr, num_fields)
 end
 
 """
@@ -267,7 +265,7 @@ rows.
 If a column contains a NULL value the corresponding element will be set to the empty string ("").
 Memory associated to MYSQL_ROW will be freed when calling mysql_free_result() function.
 
-Returns C_NULL if no row is available.
+Returns empty vector if no row is available.
 
 # Parameters
 
@@ -301,24 +299,20 @@ const NULL_TERMINATED = [ MYSQL_TYPE_TINY,
 
 function mysql_fetch_row(result::MYSQL_RES)
     row = Vector{MDB_COLUMN}()
-    ptr = ccall( (:mysql_fetch_row, mariadb_lib), Ptr{Ptr{UInt8}}, (Ptr{Void},), result)
-    if (ptr == C_NULL)
-        return C_NULL
-    end
-    fields = mysql_fetch_fields(result)
-    lengths = mysql_fetch_lengths(result)
+    ptr = ccall( (:mysql_fetch_row, mariadb_lib), Ptr{Ptr{UInt8}}, (Ptr{Void},), result.ptr)
+    ptr == C_NULL &&
+        return row
+    fields = mysql_fetch_fields(result.ptr)
+    lengths = mysql_fetch_lengths(result.ptr)
     for i in 1:length(fields)
-        if fields[i].field_type in NULL_TERMINATED
-            data = bytestring(unsafe_load(ptr,i))
-            if data == C_NULL
-                push!(row, "")
-            else
-                push!(row, data)
-            end
+        # Get Ptr{UInt8}
+        colptr = unsafe_load(ptr,i)
+        if colptr == C_NULL
+            push!(row, nothing)
+        elseif fields[i].field_type in NULL_TERMINATED
+            push!(row, bytestring(pointer_to_array(colptr, lengths[i])))
         else
-            data = Vector{UInt8}(lengths[i])
-            unsafe_copy!(pointer(data), unsafe_load(ptr, i), lengths[i])
-            push!(row, data)
+            push!(row, pointer_to_array(colptr, lengths[i]))
         end
     end
     return row
@@ -339,8 +333,8 @@ The mysql_field_count() function should be used to determine if there is a resul
 - **mysql** a mysql handle, identifier, which was previously allocated by *mysql_init()* or
   *mysql_real_connect()*.
 """
-mysql_field_count(mysql::MYSQL) = ccall( (:mysql_field_count, mariadb_lib), Cuint, (Ptr{Void},),
-                                          mysql)
+mysql_field_count(mysql::MYSQL) =
+    ccall( (:mysql_field_count, mariadb_lib), Cuint, (Ptr{Void},), mysql)
 
 """
 # Description
@@ -357,11 +351,9 @@ The number of fields can be obtained from *mysql_field_count()*.
 - **result** a result set identifier returned by *mysql_store_result()* or *mysql_use_result()*.
 - **offset** the field number. This number must be in the range from 1..number of fields.
 """
-function mysql_field_seek(result::MYSQL_RES, offset::MYSQL_FIELD_OFFSET)
-    oldOffset = ccall( (:mysql_field_seek, mariadb_lib), Cuint, (ptr{Void}, Cuint),
-                        result, offset-1)
-    return oldOffset+1
-end
+mysql_field_seek(result::MYSQL_RES, offset::MYSQL_FIELD_OFFSET) =
+    ccall( (:mysql_field_seek, mariadb_lib), Cuint, (ptr{Void}, Cuint),
+           result.ptr, offset-1) + 1
 
 """
 # Description
@@ -373,10 +365,8 @@ be used as a parameter for the function *mysql_field_seek()*.
 
 - **result** a result set identifier returned by *mysql_store_result()* or *mysql_use_result()*.
 """
-function mysql_field_tell(result::MYSQL_RES)
-    offset = ccall( (:mysql_field_tell, mariadb_lib), Cuint, (Ptr{Void},), result)
-    return offset+1
-end
+mysql_field_tell(result::MYSQL_RES) =
+    ccall( (:mysql_field_tell, mariadb_lib), Cuint, (Ptr{Void},), result.ptr) + 1
 
 """
 # Description
@@ -391,8 +381,8 @@ Row values obtained by a prior *mysql_fetch_row()* call will become invalid afte
 
 - **result** a result set identifier returned by *mysql_store_result()* or *mysql_use_result()*.
 """
-mysql_free_result(result::MYSQL_RES) = ccall( (:mysql_free_result, mariadb_lib), Void, (Ptr{Void},),
-                                               result)
+mysql_free_result(result::MYSQL_RES) =
+    ccall( (:mysql_free_result, mariadb_lib), Void, (Ptr{Void},), result.ptr)
 
 """
 # Description
@@ -410,7 +400,7 @@ description for *mysql_set_character_set_info()*.
 function mysql_get_character_set_info(mysql::MYSQL)
     info = _MY_CHARSET_INFO_[_MY_CHARSET_INFO_()]
     ccall( (:mysql_get_character_set_info, mariadb_lib), Void, (Ptr{Void}, Ref{_MY_CHARSET_INFO_}),
-            mysql, info)
+            mysql.ptr, info)
     return MY_CHARSET_INFO(info[1])
 end
 
@@ -443,14 +433,12 @@ a string, or "" if the connection is not valid.
 
 - **mysql** a mysql handle, identifier, which was previously allocated by *mysql_init()* or
   *mysql_real_connect()*.
-"""
-function mysql_get_host_info(mysql::MYSQL)
-    ptr = ccall( (:mysql_get_host_info, mariadb_lib), Ptr{UInt8}, (Ptr{Void},), mysql)
-    if ptr == C_NULL
-        return ""
-    end
-    return bytestring(ptr)
-end
+    """
+
+_wrap_null(ptr::Ptr{UInt8}) = (ptr == C_NULL) ? "" : bytestring(ptr)
+
+mysql_get_host_info(mysql::MYSQL) =
+    _wrap_null(ccall( (:mysql_get_host_info, mariadb_lib), Ptr{UInt8}, (Ptr{Void},), mysql.ptr))
 
 """
 # Description
@@ -464,8 +452,8 @@ The client library doesn't support protocol version 9 and prior.
 - **mysql** a mysql handle, identifier, which was previously allocated by *mysql_init()* or
   *mysql_real_connect()*.
 """
-mysql_get_proto_info(mysql::MYSQL) = ccall( (:mysql_get_proto_info, mariadb_lib), Cuint,
-                                            (Ptr{Void},), mysql)
+mysql_get_proto_info(mysql::MYSQL) =
+    ccall( (:mysql_get_proto_info, mariadb_lib), Cuint, (Ptr{Void},), mysql.ptr)
 
 """
 # Description
@@ -479,13 +467,8 @@ To obtain the numeric server version please use mysql_get_server_version().
 - **mysql** a mysql handle, identifier, which was previously allocated by *mysql_init()* or
   *mysql_real_connect()*.
 """
-function mysql_get_server_info(mysql::MYSQL)
-    ptr = ccall( (:mysql_get_server_info, mariadb_lib), Ptr{UInt8}, (Ptr{Void},), mysql)
-    if ptr == C_NULL
-        return ""
-    end
-    return bytestring(ptr)
-end
+mysql_get_server_info(mysql::MYSQL) =
+    _wrap_null(ccall( (:mysql_get_server_info, mariadb_lib), Ptr{UInt8}, (Ptr{Void},), mysql.ptr))
 
 """
 # Description
@@ -499,8 +482,8 @@ The form of the version number is VERSION_MAJOR * 10000 + VERSION_MINOR * 100 + 
 - **mysql** a mysql handle, identifier, which was previously allocated by *mysql_init()* or
   *mysql_real_connect()*.
 """
-mysql_get_server_version(mysql::MYSQL) = ccall( (:mysql_get_server_version, mariadb_lib), Culong,
-                                                (Ptr{Void},), mysql)
+mysql_get_server_version(mysql::MYSQL) =
+    ccall( (:mysql_get_server_version, mariadb_lib), Culong, (Ptr{Void},), mysql.ptr)
 
 """
 # Description
@@ -512,13 +495,8 @@ Returns the name of the currently used cipher of the ssl connection, or "" for n
 - **mysql** a mysql handle, identifier, which was previously allocated by *mysql_init()* or
   *mysql_real_connect()*.
 """
-function mysql_get_ssl_cipher(mysql::MYSQL)
-    ptr = ccall( (:mysql_get_ssl_cipher, mariadb_lib), Ptr{UInt8}, (Ptr{Void},), mysql)
-    if ptr == C_NULL
-        return ""
-    end
-    return bytestring(ptr)
-end
+mysql_get_ssl_cipher(mysql::MYSQL) =
+    _wrap_null(ccall( (:mysql_get_ssl_cipher, mariadb_lib), Ptr{UInt8}, (Ptr{Void},), mysql.ptr))
 
 """
 # Description
@@ -532,7 +510,7 @@ Returns the hexadecimal encoded string.
 
 - **from** the string which will be encoded
 """
-function mysql_hex_string(from::AbstractString)
+function mysql_hex_string(from::ByteString)
     num_bytes = sizeof(from)
     out = Vector{UInt8}(num_bytes * 2 + 1)
     len = ccall( (:mysql_hex_string, mariadb_lib), Culong, (Ptr{UInt8}, Ptr{UInt8}, Culong),
@@ -563,13 +541,8 @@ Queries which do not fall into one of the preceding formats are not supported
 - **mysql** a mysql handle, identifier, which was previously allocated by *mysql_init()* or
   *mysql_real_connect()*.
 """
-function mysql_info(mysql::MYSQL)
-    ptr = ccall( (:mysql_info, mariadb_lib), Ptr{UInt8}, (Ptr{Void},), mysql)
-    if ptr == C_NULL
-        return ""
-    end
-    return bytestring(ptr)
-end
+mysql_info(mysql::MYSQL) =
+    _wrap_null(ccall( (:mysql_info, mariadb_lib), Ptr{UInt8}, (Ptr{Void},), mysql.ptr))
 
 """
 # Description
@@ -602,8 +575,8 @@ When performing a multi insert statement, mysql_insert_id() will return the valu
 - **mysql** a mysql handle, identifier, which was previously allocated by *mysql_init()* or
   *mysql_real_connect()*.
 """
-mysql_insert_id(mysql::MYSQL) = ccall( (:mysql_insert_id, mariadb_lib), Culonglong, (Ptr{UInt8},),
-                                        mysql)
+mysql_insert_id(mysql::MYSQL) =
+    ccall( (:mysql_insert_id, mariadb_lib), Culonglong, (Ptr{UInt8},), mysql.ptr)
 
 """
 # Description
@@ -625,7 +598,7 @@ only kills a connection, it doesn't free any memory - this must be done explicit
 - **pid** process id.
 """
 mysql_kill(mysql::MYSQL, pid::UInt) = call( (:mysql_kill, mariadb_lib), Cint, (PTr{UInt8}, Culong),
-                                             mysql, pid)
+                                             mysql.ptr, pid)
 
 
 """
@@ -640,7 +613,7 @@ mysql_server_end() = ccall( (:mysql_server_end, mariadb_lib), Void, ())
 
 **mysql_server_init()** is an alias for *mysql_library_init()*.
 """
-function mysql_server_init(argv::Vector{AbstractString}, groups::Vector{AbstractString})
+function mysql_server_init(argv::Vector{ByteString}, groups::Vector{ByteString})
     c_groups::Vector{Ptr{UInt8}}
     for s in groups
         push!(c_groups, pointer(s))
@@ -650,17 +623,16 @@ function mysql_server_init(argv::Vector{AbstractString}, groups::Vector{Abstract
                    (Cint, Ptr{Ptr{UInt8}}, Ptr{Ptr{UInt8}}),
                    length(argv), argv, c_groups)
 end
-function mysql_server_init(argv::Vector{AbstractString})
-    return ccall( (:mysql_server_init, mariadb_lib), Cint,
-                  (Cint, Ptr{Ptr{UInt8}}, Ptr{Ptr{UInt8}}),
-                  length(argv), argv, C_NULL)
-end
-function mysql_server_init()
-    return ccall( (:mysql_server_init, mariadb_lib), Cint,
-                  (Cint, Ptr{Ptr{UInt8}}, Ptr{Ptr{UInt8}}),
-                  0, C_NULL, C_NULL)
-end
 
+mysql_server_init(argv::Vector{ByteString}) =
+    ccall( (:mysql_server_init, mariadb_lib), Cint,
+           (Cint, Ptr{Ptr{UInt8}}, Ptr{Ptr{UInt8}}),
+           length(argv), argv, C_NULL)
+
+mysql_server_init() =
+    ccall( (:mysql_server_init, mariadb_lib), Cint,
+           (Cint, Ptr{Ptr{UInt8}}, Ptr{Ptr{UInt8}}),
+           0, C_NULL, C_NULL)
 
 """
 # Description
@@ -689,8 +661,8 @@ Call *mysql_library_end()* to clean up after completion.
     process name
 - **groups** The groups to pass into the init function.
 """
-mysql_library_init(argv::Vector{AbstractString}, groups::Vector{AbstractString}) = mysql_server_init(argv, groups)
-mysql_library_init(argv::Vector{AbstractString}) = mysql_server_init(argv)
+mysql_library_init(argv::Vector{ByteString}, groups::Vector{ByteString}) = mysql_server_init(argv, groups)
+mysql_library_init(argv::Vector{ByteString}) = mysql_server_init(argv)
 mysql_library_init() = mysql_server_init()
 
 """
@@ -706,10 +678,8 @@ The function *mysql_set_server_option()* enables or disables multi statement sup
 - **mysql** a mysql handle, identifier, which was previously allocated by *mysql_init()* or
   *mysql_real_connect()*.
 """
-function mysql_more_results(mysql::MYSQL)
-    retval = ccall( (:mysql_more_results, mariadb_lib), Cchar, (Ptr{Void},), mysql)
-    return retval == 1
-end
+mysql_more_results(mysql::MYSQL) =
+    ccall( (:mysql_more_results, mariadb_lib), Cchar, (Ptr{Void},), mysql.ptr) == 1
 
 """
 # Description
@@ -726,8 +696,8 @@ will be no result set available.
 - **mysql** a mysql handle, identifier, which was previously allocated by *mysql_init()* or
   *mysql_real_connect()*.
 """
-mysql_next_result(mysql::MYSQL) = ccall( (:mysql_next_result, mariadb_lib), Cint, (Ptr{Void},),
-                                          mysql)
+mysql_next_result(mysql::MYSQL) =
+    ccall( (:mysql_next_result, mariadb_lib), Cint, (Ptr{Void},), mysql.ptr)
 
 """
 # Description
@@ -738,8 +708,8 @@ Returns number of fields in a specified result set.
 
 - **Result** A result set identifier returned by *mysql_store_result()* or *mysql_use_result()*.
 """
-mysql_num_fields(result::MYSQL_RES) = ccall( (:mysql_num_fields, mariadb_lib), Cuint, (Ptr{Void},),
-                                             result)
+mysql_num_fields(result::MYSQL_RES) =
+    ccall( (:mysql_num_fields, mariadb_lib), Cuint, (Ptr{Void},), result.ptr)
 
 """
 # Description
@@ -754,8 +724,8 @@ until all the rows in the result have been retrieved.
 
 - **Result** A result set identifier returned by *mysql_store_result()* or *mysql_use_result()*.
 """
-mysql_num_rows(result::MYSQL_RES) = ccall( (:mysql_num_rows, mariadb_lib), Culonglong, (Ptr{Void},),
-                                            result)
+mysql_num_rows(result::MYSQL_RES) =
+    ccall( (:mysql_num_rows, mariadb_lib), Culonglong, (Ptr{Void},), result.ptr)
 
 """
 # Description
@@ -859,21 +829,21 @@ function mysql_options(mysql::MYSQL, option::MYSQL_OPTION, arg::Ptr{Void})
         error("Unsupported option: MYSQL_PROGRESS_CALLBACK")
     end
     return ccall( (:mysql_options, mariadb_lib), Cint, (Ptr{Void}, Cint, Ptr{Void}),
-                    mysql, option, arg)
+                    mysql.ptr, option, arg)
 end
-mysql_options(mysql::MYSQL, option::MYSQL_OPTION) = mysql_options(mysql, option, C_NULL)
-mysql_options(mysql::MYSQL, option::MYSQL_OPTION, arg::AbstractString) = mysql_options(
-    mysql, option, @str_2_c_str(arg))
+mysql_options(mysql::MYSQL, option::MYSQL_OPTION) = mysql_options(mysql.ptr, option, C_NULL)
+mysql_options(mysql::MYSQL, option::MYSQL_OPTION, arg::ByteString) = mysql_options(
+    mysql.ptr, option, @str_2_c_str(arg))
 function mysql_options(mysql::MYSQL, option::MYSQL_OPTION, arg::Int)
     tmp = Cint[arg]
-    return mysql_options(mysql, option, pointer(tmp))
+    return mysql_options(mysql.ptr, option, pointer(tmp))
 end
 function mysql_options(mysql::MYSQL, option::MYSQL_OPTION, arg::UInt)
     tmp = Cuint[arg]
-    return mysql_optinos(mysql, option, pointer(tmp))
+    return mysql_optinos(mysql.ptr, option, pointer(tmp))
 end
 mysql_options(mysql::MYSQL, optino::MYSQL_OPTION, arg::MYSQL_PROTOCOL_TYPE) = mysql_options(
-    mysql, option, convert(Int, arg))
+    mysql.ptr, option, convert(Int, arg))
 
 """
 # Description
@@ -894,7 +864,7 @@ If a reconnect occurred the thread_id will change. Also resources bundled to the
 - **mysql** a mysql handle, identifier, which was previously allocated by *mysql_init()* or
   *mysql_real_connect()*.
 """
-mysql_ping(mysql::MYSQL) = ccall( (:mysql_ping, mariadb_lib), Cint, (Ptr{Void},), mysql)
+mysql_ping(mysql::MYSQL) = ccall( (:mysql_ping, mariadb_lib), Cint, (Ptr{Void},), mysql.ptr)
 
 """
 # Description
@@ -918,8 +888,8 @@ To determine if a statement returned a result set use the function *mysql_num_fi
   *mysql_real_connect()*.
 - **query** a string containing the statement to be performed.
 """
-mysql_query(mysql::MYSQL, query::AbstractString) = ccall( (:mysql_query, mariadb_lib), Cint,
-                                                   (Ptr{Void}, Ptr{UInt8}), mysql, query)
+mysql_query(mysql::MYSQL, query::ByteString) =
+    ccall( (:mysql_query, mariadb_lib), Cint, (Ptr{Void}, Ptr{UInt8}), mysql.ptr, query)
 
 """
 # Description
@@ -956,18 +926,23 @@ handled in the client server protocol.
         stored procedures or multi statements. This option will be automatically set if
         *CLIENT_MULTI_STATEMENTS* is set.
 """
-mysql_real_connect(mysql::MYSQL, host::Ptr{UInt8}, user::Ptr{UInt8}; passwd::Ptr{UInt8}=C_NULL,
-                   db::Ptr{UInt8}=C_NULL, port::UInt=0, unix_socket::Ptr{UInt8}=C_NULL,
-                   flags::UInt32=0) = ccall(
-                        (:mysql_real_connect, mariadb_lib), Ptr{Void}, (Ptr{Void}, Ptr{UInt8},
-                        Ptr{UInt8}, Ptr{UInt8}, Ptr{UInt8}, Cuint, Ptr{UInt8}, Culong),
-                        mysql, host, user, passwd, db, port, unix_socket, flags)
+mysql_real_connect(mysql::MYSQL, host::Ptr{UInt8}, user::Ptr{UInt8};
+                   passwd::Ptr{UInt8} = C_NULL,
+                   db::Ptr{UInt8} = C_NULL,
+                   port::UInt = 0,
+                   unix_socket::Ptr{UInt8} = C_NULL,
+                   flags::UInt32 = 0) =
+    ccall( (:mysql_real_connect, mariadb_lib), Ptr{Void},
+	   (Ptr{Void}, Ptr{UInt8}, Ptr{UInt8}, Ptr{UInt8}, Ptr{UInt8}, Cuint, Ptr{UInt8}, Culong),
+           mysql.ptr, host, user, passwd, db, port, unix_socket, flags)
 
-mysql_real_connect(mysql::MYSQL, host::AbstractString, user::AbstractString; passwd::AbstractString="", db::AbstractString="",
-                   port::UInt=UInt(0), unix_socket::AbstractString="", flags::UInt32=UInt32(0)) = mysql_real_connect(
-                        mysql,
-                        @str_2_c_str(host),
-                        @str_2_c_str(user),
+mysql_real_connect(mysql::MYSQL, host::ByteString, user::ByteString;
+                   passwd::ByteString = "",
+		   db::ByteString = "",
+                   port::UInt=UInt(0),
+                   unix_socket::ByteString="",
+                   flags::UInt32=UInt32(0)) =
+    mysql_real_connect(mysql.ptr, @str_2_c_str(host), @str_2_c_str(user),
                         passwd=@str_2_c_str(passwd),
                         db=@str_2_c_str(db),
                         port=port,
@@ -988,12 +963,12 @@ Returns the escaped string.
   *mysql_real_connect()*.
 - **from** the string which will be escaped
 """
-function mysql_real_escape_string(mysql::MYSQL, from::AbstractString)
+function mysql_real_escape_string(mysql::MYSQL, from::ByteString)
     num_bytes = sizeof(from)
     out = Vector{UInt8}(num_bytes * 2 + 1)
     len = ccall( (:mysql_real_escape_string, mariadb_lib), Culong,
                   (Ptr{Void}, Ptr{UInt8}, Ptr{UInt8}, Culong),
-                  mysql, out, from, num_bytes)
+                  mysql.ptr, out, from, num_bytes)
     r = range(1, Int64(len))
     return (bytestring(getindex(out,r)), len)
 end
@@ -1013,11 +988,12 @@ To determine if **mysql_real_query** returns a result set use the *mysql_num_fie
   *mysql_real_connect()*.
 - **query** a string containing the statement to be performed.
 """
-mysql_real_query(mysql::MYSQL, query::Vector{UInt8}) = ccall(
-    (:mysql_real_query, mariadb_lib), Cint, (Ptr{Void}, Ptr{UInt8}, Culong),
-    mysql, query, length(query))
-mysql_real_query(mysql::MYSQL, query::AbstractString) = mysql_real_query(mysql,
-                                                                 convert(Vector{UInt8}, query))
+mysql_real_query(mysql::MYSQL, query::Vector{UInt8}) =
+    ccall( (:mysql_real_query, mariadb_lib), Cint, (Ptr{Void}, Ptr{UInt8}, Culong),
+           mysql.ptr, query, length(query))
+
+mysql_real_query(mysql::MYSQL, query::ByteString) =
+    mysql_real_query(mysql.ptr, convert(Vector{UInt8}, query))
 
 """
 # Description
@@ -1050,8 +1026,8 @@ To combine different values in the options parameter use the OR operator '|'. Th
   *mysql_real_connect()*.
 - **options**  a bit masked composed integer. See above.
 """
-mysql_refresh(mysql::MYSQL, options::UInt32) = ccall( (:mysql_refresh, mariadb_lib), Cchar,
-                                                       (Ptr{Void}, Cuint), mysql, options)
+mysql_refresh(mysql::MYSQL, options::UInt32) =
+    ccall( (:mysql_refresh, mariadb_lib), Cchar, (Ptr{Void}, Cuint), mysql.ptr, options)
 
 """
 # Description
@@ -1068,7 +1044,8 @@ not support transactions.
 - **mysql** a mysql handle, identifier, which was previously allocated by *mysql_init()* or
   *mysql_real_connect()*.
 """
-mysql_rollback(mysql::MYSQL) = ccall( (:mysql_rollback, mariadb_lib), Cchar, (Ptr{Void},), mysql)
+mysql_rollback(mysql::MYSQL) =
+    ccall( (:mysql_rollback, mariadb_lib), Cchar, (Ptr{Void},), mysql.ptr)
 
 """
 # Description
@@ -1086,8 +1063,9 @@ This function will **not** work if the result set was obtained by *mysql_use_res
 - **offset** row offset. This value can be obtained either by *mysql_row_seek()* or
     *mysql_row_tell()*
 """
-mysql_row_seek(result::MYSQL_RES, offset::MYSQL_ROW_OFFSET) = ccall(
-    (:mysql_row_seek, mariadb_lib), Ptr{Void}, (Ptr{Void}, Ptr{Void}), result, offset)
+mysql_row_seek(result::MYSQL_RES, offset::MYSQL_ROW_OFFSET) =
+    MYSQL_ROW_OFFSET(ccall( (:mysql_row_seek, mariadb_lib), Ptr{Void},
+                            (Ptr{Void}, Ptr{Void}), result.ptr, offset.ptr))
 
 """
 # Description
@@ -1101,8 +1079,8 @@ This function will not work if the result set was obtained by *mysql_use_result(
 
 - **result** a result set identifier returned by *mysql_store_result()* or *mysql_use_result()*.
 """
-mysql_row_tell(result::MYSQL_RES) = ccall( (:mysql_row_tell, mariadb_lib), PTr{Void}, (Ptr{Void},),
-                                            result)
+mysql_row_tell(result::MYSQL_RES) =
+    MYSQL_ROW_OFFSET(ccall( (:mysql_row_tell, mariadb_lib), Ptr{Void}, (Ptr{Void},), result.ptr))
 
 """
 # Description
@@ -1121,8 +1099,8 @@ The default database can also be set by the db parameter in mysql_real_connect()
   *mysql_real_connect()*.
 - **db** the default database name.
 """
-mysql_select_db(mysql::MYSQL, db::AbstractString) = ccall( (:mysql_select_db, mariadb_lib),
-                                                    Cint, (Ptr{Void}, Ptr{Void}), mysql, db)
+mysql_select_db(mysql::MYSQL, db::ByteString) =
+    ccall( (:mysql_select_db, mariadb_lib), Cint, (Ptr{Void}, Ptr{Void}), mysql.ptr, db)
 
 """
 # Description
@@ -1133,9 +1111,10 @@ mysql_select_db(mysql::MYSQL, db::AbstractString) = ccall( (:mysql_select_db, ma
   *mysql_real_connect()*.
 - **query** the query
 """
-mysql_send_query(mysql::MYSQL, query::AbstractString) = ccall( (:mysql_send_query, mariadb_lib),
-                                                        Cint, (Ptr{Void}, Ptr{Void}, Culong),
-                                                        mysql, query, sizeof(query))
+mysql_send_query(mysql::MYSQL, query::ByteString) =
+    ccall( (:mysql_send_query, mariadb_lib),
+           Cint, (Ptr{Void}, Ptr{Void}, Culong),
+           mysql.ptr, query, sizeof(query))
 
 """
 # Description
@@ -1154,36 +1133,36 @@ The client library supports the following character sets:
 | armscii8      | 8 bit character set for Armenian                                         |
 | ascii	        | US ASCII character set                                                   |
 | big5	        | 2 byte character set for traditional Chinese, Hongkong, Macau and Taiwan |
-| binary	    | 8 bit binary character set                                               |
-| cp1250	    | Windows code page 1250 character set                                     |
-| cp1251	    | Windows code page 1251 character set                                     |
-| cp1256	    | Windows code page 1256 character set                                     |
-| cp1257	    | Windows code page 1257 character set                                     |
+| binary        | 8 bit binary character set                                               |
+| cp1250	| Windows code page 1250 character set                                     |
+| cp1251	| Windows code page 1251 character set                                     |
+| cp1256	| Windows code page 1256 character set                                     |
+| cp1257	| Windows code page 1257 character set                                     |
 | cp850	        | MS-DOS Codepage 850 (Western Europe)                                     |
 | cp852	        | MS-DOS Codepage 852 (Middle Europe)                                      |
 | cp866	        | MS-DOS Codepage 866 (Russian)                                            |
 | cp932	        | Microsoft Codepage 932 (Extension to sjis)                               |
 | dec8	        | DEC West European                                                        |
-| eucjpms	    | UJIS for Windows Japanese                                                |
+| eucjpms	| UJIS for Windows Japanese                                                |
 | euckr	        | EUC KR-Korean                                                            |
-| gb2312	    | GB-2312 simplified Chinese                                               |
+| gb2312	| GB-2312 simplified Chinese                                               |
 | gbk	        | GBK simplified Chinese                                                   |
-| geostd8	    | GEOSTD8 Georgian                                                         |
+| geostd8	| GEOSTD8 Georgian                                                         |
 | greek	        | ISO 8859-7 Greek                                                         |
-| hebrew	    | ISO 8859-8 Hebrew                                                        |
+| hebrew	| ISO 8859-8 Hebrew                                                        |
 | hp8	        | HP West European                                                         |
-| keybcs2	    | DOS Kamenicky Czech-Slovak                                               |
+| keybcs2	| DOS Kamenicky Czech-Slovak                                               |
 | koi8r	        | KOI8-R Relcom Russian                                                    |
 | koi8u	        | KOI8-U Ukrainian                                                         |
-| latin1	    | CP1252 Western European                                                  |
-| latin2	    | ISO 8859-2 Central Europe                                                |
-| latin5	    | ISO 8859-9 Turkish                                                       |
-| latin7	    | ISO 8859-13 Baltic                                                       |
+| latin1	| CP1252 Western European                                                  |
+| latin2	| ISO 8859-2 Central Europe                                                |
+| latin5	| ISO 8859-9 Turkish                                                       |
+| latin7	| ISO 8859-13 Baltic                                                       |
 | macce	        | MAC Central European                                                     |
-| macroman	    | MAC Western European                                                     |
+| macroman	| MAC Western European                                                     |
 | sjis	        | SJIS for Windows Japanese                                                |
 | swe7	        | 7-bit Swedish                                                            |
-| tis620	    | TIS620 Thai                                                              |
+| tis620	| TIS620 Thai                                                              |
 | ucs2	        | UCS-2 Unicode                                                            |
 | ujis	        | EUC-JP Japanese                                                          |
 | utf8	        | UTF-8 Unicode                                                            |
@@ -1196,8 +1175,9 @@ The client library supports the following character sets:
   *mysql_real_connect()*.
 - **csname** character set name
 """
-mysql_set_character_set(mysql::MYSQL, csname::AbstractString) = ccall(
-    (:mysql_set_character_set, mariadb_lib), Cint, (Ptr{Void}, Ptr{UInt8}), mysql, csname)
+mysql_set_character_set(mysql::MYSQL, csname::ByteString) =
+    ccall( (:mysql_set_character_set, mariadb_lib), Cint, (Ptr{Void}, Ptr{UInt8}),
+           mysql.ptr, csname)
 
 """
 # Description
@@ -1215,8 +1195,8 @@ Server option, which can be one of the following values:
   *mysql_real_connect()*.
 - **option** server option (see above)
 """
-mysql_set_server_option(mysql::MYSQL, option::MYSQL_SET_OPTION) = ccall(
-    (:mysql_set_server_option, mariadb_lib), Cint, (Ptr{Void}, Cint), mysql, option)
+mysql_set_server_option(mysql::MYSQL, option::MYSQL_SET_OPTION) =
+    ccall( (:mysql_set_server_option, mariadb_lib), Cint, (Ptr{Void}, Cint), mysql.ptr, option)
 
 """
 # Description
@@ -1232,8 +1212,8 @@ Returns MYSQL_OK on success, non-zero on failure.
   *mysql_real_connect()*.
 - **shutdown_level** currently only one shutdown level, **SHUTDOWN_DEFAULT** is supported.
 """
-mysql_shutdown(mysql::MYSQL, shutdown_level::MYSQL_SHUTDOWN_LEVEL) = ccall(
-    (:mysql_shutdown, mariadb_lib), Cint, (Ptr{Void}, Cint), mysql, shutdown_level)
+mysql_shutdown(mysql::MYSQL, shutdown_level::MYSQL_SHUTDOWN_LEVEL) =
+    ccall( (:mysql_shutdown, mariadb_lib), Cint, (Ptr{Void}, Cint), mysql.ptr, shutdown_level)
 
 """
 # Description
@@ -1251,7 +1231,7 @@ can't be mapped will returned as value HY000.
   *mysql_real_connect()*.
 """
 mysql_sqlstate(mysql::MYSQL) = bytestring(
-    ccall( (:mysql_sqlstate, mariadb_lib), Ptr{UInt8}, (Ptr{Void},), mysql))
+    ccall( (:mysql_sqlstate, mariadb_lib), Ptr{UInt8}, (Ptr{Void},), mysql.ptr))
 
 """
 # Description
@@ -1274,24 +1254,28 @@ to have any effect.
 - **capath** path to the directory containing the trusted SSL CA certificates in PEM format.
 - **cipher** list of permitted ciphers to use for SSL encryption.
 """
-mysql_ssl_set(mysql::MYSQL, key::Ptr{UInt8}=C_NULL, cert::Ptr{UInt8}=C_NULL, ca::Ptr{UInt8}=C_NULL,
-              capath::Ptr{UInt8}=C_NULL, cipher::Ptr{UInt8}=C_NULL) = ccall(
-                (:mysql_ssl_set, mariadb_lib),
-                Cchar, (Ptr{Void}, Ptr{UInt8}, Ptr{UInt8}, Ptr{UInt8}, Ptr{UInt8}, Ptr{UInt8}),
-                mysql, key, cert, ca, capath, cipher)
-mysql_ssl_set(mysql::MYSQL, key::AbstractString, cert::AbstractString, ca::AbstractString, capath::AbstractString,
-              cipher::AbstractString) = mysql_ssl_set(
-                mysql,
-                @str_2_c_str(key),
-                @str_2_c_str(cert),
-                @str_2_c_str(ca),
-                @str_2_c_str(capath),
-                @str_2_c_str(cipher))
-            #    (key == "" ? C_NULL : pointer(key)),
-            #    (cert == "" ? C_NULL : pointer(cert)),
-            #    (ca == "" ? C_NULL : pointer(ca)),
-            #    (capath == "" ? C_NULL : pointer(capath)),
-            #    (cipher == "" ? C_NULL : pointer(cipher)))
+mysql_ssl_set(mysql::MYSQL,
+              key::Ptr{UInt8}=C_NULL,
+              cert::Ptr{UInt8}=C_NULL,
+	      ca::Ptr{UInt8}=C_NULL,
+              capath::Ptr{UInt8}=C_NULL,
+              cipher::Ptr{UInt8}=C_NULL) =
+    ccall( (:mysql_ssl_set, mariadb_lib), Cchar,
+	   (Ptr{Void}, Ptr{UInt8}, Ptr{UInt8}, Ptr{UInt8}, Ptr{UInt8}, Ptr{UInt8}),
+           mysql.ptr, key, cert, ca, capath, cipher)
+
+mysql_ssl_set(mysql::MYSQL,
+              key::ByteString,
+              cert::ByteString,
+              ca::ByteString,
+              capath::ByteString,
+              cipher::ByteString) =
+    mysql_ssl_set(mysql,
+                  @str_2_c_str(key),
+                  @str_2_c_str(cert),
+                  @str_2_c_str(ca),
+                  @str_2_c_str(capath),
+                  @str_2_c_str(cipher))
 
 """
 # Description
@@ -1307,7 +1291,7 @@ For a complete list of other status variables, you have to use the SHOW STATUS S
   *mysql_real_connect()*.
 """
 mysql_stat(mysql::MYSQL) = bytestring(
-    ccall( (:mysql_stat, mariadb_lib), Ptr{UInt8}, (Ptr{Void},), mysql))
+    ccall( (:mysql_stat, mariadb_lib), Ptr{UInt8}, (Ptr{Void},), mysql.ptr))
 
 """
 # Description
@@ -1327,8 +1311,8 @@ The memory allocated by **mysql_store_result()** needs to be released by calling
 - **mysql** a mysql handle, identifier, which was previously allocated by *mysql_init()* or
   *mysql_real_connect()*.
 """
-mysql_store_result(mysql::MYSQL) = ccall( (:mysql_store_result, mariadb_lib),
-                                           Ptr{Void}, (Ptr{Void},), mysql)
+mysql_store_result(mysql::MYSQL) =
+    ccall( (:mysql_store_result, mariadb_lib), Ptr{Void}, (Ptr{Void},), mysql.ptr)
 
 """
 # Description
@@ -1354,7 +1338,8 @@ id might change if the client reconnects to the server.
 - **mysql** a mysql handle, identifier, which was previously allocated by *mysql_init()* or
   *mysql_real_connect()*.
 """
-mysql_thread_id(mysql::MYSQL) = ccall( (:mysql_thread_id, mariadb_lib), Culong, (Ptr{Void},), mysql)
+mysql_thread_id(mysql::MYSQL) =
+    ccall( (:mysql_thread_id, mariadb_lib), Culong, (Ptr{Void},), mysql.ptr)
 
 """
 # Description
@@ -1401,8 +1386,8 @@ current connection until all result sets are retrieved or result set was release
 - **mysql** a mysql handle, identifier, which was previously allocated by *mysql_init()* or
   *mysql_real_connect()*.
 """
-mysql_use_result(mysql::MYSQL) = ccall( (:mysql_use_result, mariadb_lib), Ptr{Void}, (Ptr{Void},),
-                                         mysql)
+mysql_use_result(mysql::MYSQL) =
+    ccall( (:mysql_use_result, mariadb_lib), Ptr{Void}, (Ptr{Void},), mysql.ptr)
 
 """
 # Description
@@ -1418,22 +1403,23 @@ information check the server documentation.
 - **mysql** a mysql handle, identifier, which was previously allocated by *mysql_init()* or
   *mysql_real_connect()*.
 """
-mysql_warning_count(mysql::MYSQL) = ccall( (:mysql_warning_count, mariadb_lib), Cuint, (Ptr{Void},),
-                                            mysql)
+mysql_warning_count(mysql::MYSQL) =
+    ccall( (:mysql_warning_count, mariadb_lib), Cuint, (Ptr{Void},), mysql.ptr)
 
 
-export  mysql_affected_rows, mysql_autocommit, mysql_change_user, mysql_character_set_name,
-        mysql_close, mysql_commit, mysql_data_seek, mysql_dump_debug_info, mysql_errno, mysql_error,
-        mysql_escape_string, mysql_fetch_field, mysql_fetch_fields, mysql_fetch_field_direct,
-        mysql_fetch_lengths, mysql_fetch_row, mysql_field_count, mysql_field_seek, mysql_field_tell,
-        mysql_free_result, mysql_get_character_set_info, mysql_get_client_info,
-        mysql_get_client_version, mysql_get_host_info, mysql_get_proto_info, mysql_get_server_info,
-        mysql_get_server_version, mysql_get_ssl_cipher, mysql_hex_string, mysql_info, mysql_init,
-        mysql_insert_id, mysql_kill, mysql_library_end, mysql_library_init, mysql_more_results,
-        mysql_next_result, mysql_num_fields, mysql_num_rows, mysql_options, mysql_ping, mysql_query,
-        mysql_real_connect, mysql_real_escape_string, mysql_real_query, mysql_refresh,
-        mysql_rollback, mysql_row_seek, mysql_row_tell, mysql_select_db, mysql_send_query,
-        mysql_server_end, mysql_server_init, mysql_set_character_set, mysql_set_server_option,
-        mysql_shutdown, mysql_sqlstate, mysql_ssl_set, mysql_stat, mysql_store_result,
-        mysql_thread_end, mysql_thread_id, mysql_thread_init, mysql_thread_safe, mysql_use_result,
-        mysql_warning_count
+export mysql_affected_rows, mysql_autocommit, mysql_change_user, mysql_character_set_name,
+       mysql_close, mysql_commit, mysql_data_seek, mysql_dump_debug_info, mysql_errno,
+       mysql_error, mysql_escape_string, mysql_fetch_field, mysql_fetch_fields,
+       mysql_fetch_field_direct, mysql_fetch_lengths, mysql_fetch_row, mysql_field_count,
+       mysql_field_seek, mysql_field_tell, mysql_free_result, mysql_get_character_set_info,
+       mysql_get_client_info, mysql_get_client_version, mysql_get_host_info,
+       mysql_get_proto_info, mysql_get_server_info, mysql_get_server_version,
+       mysql_get_ssl_cipher, mysql_hex_string, mysql_info, mysql_init, mysql_insert_id,
+       mysql_kill, mysql_library_end, mysql_library_init, mysql_more_results, mysql_next_result,
+       mysql_num_fields, mysql_num_rows, mysql_options, mysql_ping, mysql_query,
+       mysql_real_connect, mysql_real_escape_string, mysql_real_query, mysql_refresh,
+       mysql_rollback, mysql_row_seek, mysql_row_tell, mysql_select_db, mysql_send_query,
+       mysql_server_end, mysql_server_init, mysql_set_character_set, mysql_set_server_option,
+       mysql_shutdown, mysql_sqlstate, mysql_ssl_set, mysql_stat, mysql_store_result,
+       mysql_thread_end, mysql_thread_id, mysql_thread_init, mysql_thread_safe, mysql_use_result,
+       mysql_warning_count
