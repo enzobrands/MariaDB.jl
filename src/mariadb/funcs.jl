@@ -942,7 +942,7 @@ mysql_real_connect(mysql::MYSQL, host::ByteString, user::ByteString;
                    port::UInt=UInt(0),
                    unix_socket::ByteString="",
                    flags::UInt32=UInt32(0)) =
-    mysql_real_connect(mysql.ptr, @str_2_c_str(host), @str_2_c_str(user),
+    mysql_real_connect(mysql, @str_2_c_str(host), @str_2_c_str(user),
                         passwd=@str_2_c_str(passwd),
                         db=@str_2_c_str(db),
                         port=port,
