@@ -993,7 +993,7 @@ mysql_real_query(mysql::MYSQL, query::Vector{UInt8}) =
            mysql.ptr, query, length(query))
 
 mysql_real_query(mysql::MYSQL, query::ByteString) =
-    mysql_real_query(mysql.ptr, convert(Vector{UInt8}, query))
+    mysql_real_query(mysql, convert(Vector{UInt8}, query))
 
 """
 # Description
