@@ -831,19 +831,19 @@ function mysql_options(mysql::MYSQL, option::MYSQL_OPTION, arg::Ptr{Void})
     return ccall( (:mysql_options, mariadb_lib), Cint, (Ptr{Void}, Cint, Ptr{Void}),
                     mysql.ptr, option, arg)
 end
-mysql_options(mysql::MYSQL, option::MYSQL_OPTION) = mysql_options(mysql.ptr, option, C_NULL)
+mysql_options(mysql::MYSQL, option::MYSQL_OPTION) = mysql_options(mysql, option, C_NULL)
 mysql_options(mysql::MYSQL, option::MYSQL_OPTION, arg::ByteString) = mysql_options(
-    mysql.ptr, option, @str_2_c_str(arg))
+    mysql, option, @str_2_c_str(arg))
 function mysql_options(mysql::MYSQL, option::MYSQL_OPTION, arg::Int)
     tmp = Cint[arg]
-    return mysql_options(mysql.ptr, option, pointer(tmp))
+    return mysql_options(mysql, option, pointer(tmp))
 end
 function mysql_options(mysql::MYSQL, option::MYSQL_OPTION, arg::UInt)
     tmp = Cuint[arg]
-    return mysql_optinos(mysql.ptr, option, pointer(tmp))
+    return mysql_optinos(mysql, option, pointer(tmp))
 end
 mysql_options(mysql::MYSQL, optino::MYSQL_OPTION, arg::MYSQL_PROTOCOL_TYPE) = mysql_options(
-    mysql.ptr, option, convert(Int, arg))
+    mysql, option, convert(Int, arg))
 
 """
 # Description
