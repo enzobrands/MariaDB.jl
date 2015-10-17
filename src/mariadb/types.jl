@@ -1,10 +1,36 @@
+# These are used to link to the LGPL 2.1 licensed MariaDB Connector/C library
+# They are derived from:
+# https://mariadb.com/kb/en/mariadb/mariadb-connector-c
+# The Julia wrapper types are:
+# Copyright (c) 2015 Dynactionize NV
+
 export MYSQL, MYSQL_RES, MYSQL_ROW, MYSQL_FIELD_OFFSET, MYSQL_ROW_OFFSET
 
-typealias MYSQL Ptr{Void}
-typealias MYSQL_RES Ptr{Void}
-typealias MYSQL_ROW Vector{ByteString}
-typealias MYSQL_FIELD_OFFSET UInt32
-typealias MYSQL_ROW_OFFSET Ptr{Void}
+type MYSQL
+    ptr::Ptr{Void}
+    MYSQL(p) = (val = new(p) ; finalizer(val, mysql_close) ; val)
+end
+
+type MYSQL_RES
+    ptr::Ptr{Void}
+    MYSQL_RES(p) = (val = new(p) ; finalizer(val, mysql_free_result) ; val)
+end
+
+immutable MYSQL_ROW
+    data::Vector{UTF8String}
+end
+
+immutable MYSQL_FIELD_OFFSET
+    off::UInt32
+end
+
+immutable MYSQL_ROW_OFFSET
+    ptr::Ptr{Void}
+end
+
+immutable MYSQL_FIELD_TYPE
+    typ::UInt8
+end
 
 
 export MYSQL_FIELD_TYPE
@@ -15,8 +41,6 @@ export MYSQL_TYPE_DECIMAL, MYSQL_TYPE_TINY, MYSQL_TYPE_SHORT, MYSQL_TYPE_LONG, M
        MYSQL_TYPE_DATETIME2, MYSQL_TYPE_TIME2, MYSQL_TYPE_NEWDECIMAL, MYSQL_TYPE_ENUM,
        MYSQL_TYPE_SET, MYSQL_TYPE_TINY_BLOB, MYSQL_TYPE_MEDIUM_BLOB, MYSQL_TYPE_LONG_BLOB,
        MYSQL_TYPE_BLOB, MYSQL_TYPE_VAR_STRING, MYSQL_TYPE_STRING, MYSQL_TYPE_GEOMETRY
-
-typealias MYSQL_FIELD_TYPE UInt32
 
 const MYSQL_TYPE_DECIMAL        = MYSQL_FIELD_TYPE(0)
 const MYSQL_TYPE_TINY           = MYSQL_FIELD_TYPE(1)
@@ -51,10 +75,12 @@ const MYSQL_TYPE_GEOMETRY       = MYSQL_FIELD_TYPE(255)
 
 
 export MYSQL_TIMESTAMP_TYPE
-export MYSQL_TIMESTAMP_NONE, MYSQL_TIMESTAMP_ERROR, MYSQL_TIMESTAMP_DATE, MYSQL_TIMESTAMP_DATETIME,
-       MYSQL_TIMESTAMP_TIME
+export MYSQL_TIMESTAMP_NONE, MYSQL_TIMESTAMP_ERROR, MYSQL_TIMESTAMP_DATE,
+       MYSQL_TIMESTAMP_DATETIME, MYSQL_TIMESTAMP_TIME
 
-typealias MYSQL_TIMESTAMP_TYPE Int32
+immutable MYSQL_TIMESTAMP_TYPE
+    typ::Int8
+end
 
 const MYSQL_TIMESTAMP_NONE      = MYSQL_TIMESTAMP_TYPE(-2)
 const MYSQL_TIMESTAMP_ERROR     = MYSQL_TIMESTAMP_TYPE(-1)
@@ -74,7 +100,9 @@ export MYSQL_OPT_CONNECT_TIMEOUT, MYSQL_OPT_COMPRESS, MYSQL_OPT_NAMED_PIPE, MYSQ
        MYSQL_PLUGIN_DIR, MYSQL_DEFAULT_AUTH, MYSQL_ENABLE_CLEARTEXT_PLUGIN, MYSQL_PROGRESS_CALLBACK,
        MYSQL_OPT_NONBLOCK
 
-typealias MYSQL_OPTION UInt32
+immutable MYSQL_OPTION
+    opt::UInt16
+end
 
 const MYSQL_OPT_CONNECT_TIMEOUT         = MYSQL_OPTION(0)
 const MYSQL_OPT_COMPRESS                = MYSQL_OPTION(1)
@@ -108,7 +136,9 @@ export MYSQL_PROTOCOL_TYPE
 export MYSQL_PROTOCOL_DEFAULT, MYSQL_PROTOCOL_TCP, MYSQL_PROTOCOL_SOCKET, MYSQL_PROTOCOL_PIPE,
        MYSQL_PROTOCOL_PIPE
 
-typealias MYSQL_PROTOCOL_TYPE UInt32
+immutable MYSQL_PROTOCOL_TYPE
+    typ::UInt8
+end
 
 const MYSQL_PROTOCOL_DEFAULT    = MYSQL_PROTOCOL_TYPE(0)
 const MYSQL_PROTOCOL_TCP        = MYSQL_PROTOCOL_TYPE(1)
@@ -121,7 +151,9 @@ export MYSQL_STATUS
 export MYSQL_STATUS_READY, MYSQL_STATUS_GET_RESULT, MYSQL_STATUS_USE_RESULT,
        MYSQL_STATUS_STATEMENT_GET_RESULT
 
-typealias MYSQL_STATUS UInt32
+immutable MYSQL_STATUS
+    status::UInt8
+end
 
 const MYSQL_STATUS_READY                = MYSQL_STATUS(0)
 const MYSQL_STATUS_GET_RESULT           = MYSQL_STATUS(1)
@@ -131,7 +163,9 @@ const MYSQL_STATUS_STATEMENT_GET_RESULT = MYSQL_STATUS(3)
 export MYSQL_SET_OPTION
 export MYSQL_OPTION_MULTI_STATEMENT_ON, MYSQL_OPTION_MULTI_STATEMENT_OFF
 
-typealias MYSQL_SET_OPTION UInt32
+immutable MYSQL_SET_OPTION
+    status::UInt8
+end
 
 const MYSQL_OPTION_MULTI_STATEMENTS_ON  = MYSQL_SET_OPTION(0)
 const MYSQL_OPTION_MULTI_STATEMENTS_OFF = MYSQL_SET_OPTION(1)
@@ -150,14 +184,16 @@ const MYSQL_SHUTDOWN_KILLABLE_UPDATE      = 0x08
 
 export MYSQL_SHUTDOWN_LEVEL
 
-typealias MYSQL_SHUTDOWN_LEVEL UInt32
+immutable MYSQL_SHUTDOWN_LEVEL
+    level::UInt8
+end
 
-const SHUTDOWN_DEFAULT                  = MYSQL_SHUTDOWN_LEVEL(0)
-const SHUTDOWN_WAIT_CONNECTIONS         = MYSQL_SHUTDOWN_LEVEL(MYSQL_SHUTDOWN_KILLABLE_CONNECT)
-const SHUTDOWN_WAIT_TRANSACTIONS        = MYSQL_SHUTDOWN_LEVEL(MYSQL_SHUTDOWN_KILLABLE_TRANS)
-const SHUTDOWN_WAIT_UPDATES             = MYSQL_SHUTDOWN_LEVEL(MYSQL_SHUTDOWN_KILLABLE_UPDATE)
-const SHUTDOWN_WAIT_ALL_BUFFERS         = MYSQL_SHUTDOWN_LEVEL(MYSQL_SHUTDOWN_KILLABLE_UPDATE<<1)
-const SHUTDOWN_WAIT_CRITICAL_BUFFERS    = MYSQL_SHUTDOWN_LEVEL((MYSQL_SHUTDOWN_KILLABLE_UPDATE<<1)+1)
+const SHUTDOWN_DEFAULT               = MYSQL_SHUTDOWN_LEVEL(0)
+const SHUTDOWN_WAIT_CONNECTIONS      = MYSQL_SHUTDOWN_LEVEL(MYSQL_SHUTDOWN_KILLABLE_CONNECT)
+const SHUTDOWN_WAIT_TRANSACTIONS     = MYSQL_SHUTDOWN_LEVEL(MYSQL_SHUTDOWN_KILLABLE_TRANS)
+const SHUTDOWN_WAIT_UPDATES          = MYSQL_SHUTDOWN_LEVEL(MYSQL_SHUTDOWN_KILLABLE_UPDATE)
+const SHUTDOWN_WAIT_ALL_BUFFERS      = MYSQL_SHUTDOWN_LEVEL(MYSQL_SHUTDOWN_KILLABLE_UPDATE<<1)
+const SHUTDOWN_WAIT_CRITICAL_BUFFERS = MYSQL_SHUTDOWN_LEVEL((MYSQL_SHUTDOWN_KILLABLE_UPDATE<<1)+1)
 
 export NOT_NULL_FLAG, PRI_KEY_FLAG, UNIQUE_KEY_FLAG, MULTIPLE_KEY_FLAG, BLOB_FLAG, UNSIGNED_FLAG,
        ZEROFILL_FLAG, BINARY_FLAG, ENUM_FLAG, AUTO_INCREMENT_FLAG, TIMESTAMP_FLAG, SET_FLAG,
@@ -258,28 +294,28 @@ macro str_2_c_str(str)
 end
 
 type _MYSQL_FIELD_
-    name::Ptr{Uint8}
-    org_name::Ptr{Uint8}
-    table::Ptr{Uint8}
-    org_table::Ptr{Uint8}
-    db::Ptr{Uint8}
-    catalog::Ptr{Uint8}
-    def::Ptr{Uint8}
-    @windows_only length::Uint32
-    @windows_only max_length::Uint32
-    @unix_only length::Uint
-    @unix_only max_length::Uint
-    name_length::Uint32
-    org_name_length::Uint32
-    table_length::Uint32
-    org_table_length::Uint32
-    db_length::Uint32
-    catalog_lenght::Uint32
-    def_length::Uint32
-    flags::Uint32
-    decimals::Uint32
-    charsetnr::Uint32
-    field_type::Uint32
+    name::Ptr{UInt8}
+    org_name::Ptr{UInt8}
+    table::Ptr{UInt8}
+    org_table::Ptr{UInt8}
+    db::Ptr{UInt8}
+    catalog::Ptr{UInt8}
+    def::Ptr{UInt8}
+    @windows_only length::UInt32
+    @windows_only max_length::UInt32
+    @unix_only length::UInt
+    @unix_only max_length::UInt
+    name_length::UInt32
+    org_name_length::UInt32
+    table_length::UInt32
+    org_table_length::UInt32
+    db_length::UInt32
+    catalog_lenght::UInt32
+    def_length::UInt32
+    flags::UInt32
+    decimals::UInt32
+    charsetnr::UInt32
+    field_type::UInt32
     extension::Ptr{Void}
 end
 _MYSQL_FIELD_() = _MYSQL_FIELD_(C_NULL, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL,
@@ -288,20 +324,21 @@ _MYSQL_FIELD_() = _MYSQL_FIELD_(C_NULL, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL, 
 export MYSQL_FIELD
 
 type MYSQL_FIELD
-    name::String
-    org_name::String
-    table::String
-    org_table::String
-    db::String
-    catalog::String
-    def::String
-    length::Uint
-    max_length::Uint
-    flags::Uint
-    decimals::Uint
-    charsetnr::Uint
+    name::UTF8String
+    org_name::UTF8String
+    table::UTF8String
+    org_table::UTF8String
+    db::UTF8String
+    catalog::UTF8String
+    def::UTF8String
+    length::UInt
+    max_length::UInt
+    flags::UInt
+    decimals::UInt
+    charsetnr::UInt
     field_type::MYSQL_FIELD_TYPE
 end
+
 MYSQL_FIELD() = MYSQL_FIELD("", "", "", "", "", 0, 0, 0, 0, 0, 0)
 function MYSQL_FIELD(c_mysql_field::_MYSQL_FIELD_)
     MYSQL_FIELD(
@@ -322,28 +359,28 @@ function MYSQL_FIELD(c_mysql_field::_MYSQL_FIELD_)
 end
 
 type _MY_CHARSET_INFO_
-    number::Uint32
-    state::Uint32
-    csname::Ptr{Uint8}
-    name::Ptr{Uint8}
-    comment::Ptr{Uint8}
-    dir::Ptr{Uint8}
-    mbminlen::Uint32
-    mbmaxlen::Uint32
+    number::UInt32
+    state::UInt32
+    csname::Ptr{UInt8}
+    name::Ptr{UInt8}
+    comment::Ptr{UInt8}
+    dir::Ptr{UInt8}
+    mbminlen::UInt32
+    mbmaxlen::UInt32
 end
 _MY_CHARSET_INFO_() = _MY_CHARSET_INFO_(0, 0, C_NULL, C_NULL, C_NULL, C_NULL, 0, 0)
 
 export MY_CHARSET_INFO
 
 type MY_CHARSET_INFO
-    number::Uint
-    state::Uint
-    csname::String
-    name::String
-    comment::String
-    dir::String
-    mbminlen::Uint
-    mbmaxlen::Uint
+    number::UInt
+    state::UInt
+    csname::UTF8String
+    name::UTF8String
+    comment::UTF8String
+    dir::UTF8String
+    mbminlen::UInt
+    mbmaxlen::UInt
 end
 MY_CHARSET_INFO() = MY_CHARSET_INFO(0, 0, "", "", "", "", 0, 0)
 function MY_CHARSET_INFO(c_charset_info::_MY_CHARSET_INFO_)
@@ -363,14 +400,14 @@ end
 export MYSQL_TIME
 
 type MYSQL_TIME
-    year::Uint32
-    month::Uint32
-    day::Uint32
-    hour::Uint32
-    minute::Uint32
-    second::Uint32
-    @windows_only second_part::Uint32
-    @unix_only second_part::Uint
+    year::UInt32
+    month::UInt32
+    day::UInt32
+    hour::UInt32
+    minute::UInt32
+    second::UInt32
+    @windows_only second_part::UInt32
+    @unix_only second_part::UInt
     neg::Int8
     time_type::MYSQL_TIMESTAMP_TYPE
 end

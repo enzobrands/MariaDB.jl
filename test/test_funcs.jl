@@ -2,7 +2,7 @@ module TestFuncs
     using Base.Test
     using MariaDB
 
-    function connect_to_database(user::String, password::String, db::String)
+    function connect_to_database(user::AbstractString, password::AbstractString, db::AbstractString)
         mysql = mysql_init()
         @test mysql != C_NULL
 

@@ -1,3 +1,7 @@
+# These are used to link to the LGPL 2.1 licensed MariaDB Connector/C library
+# They are derived from:
+# https://mariadb.com/kb/en/mariadb/mariadb-connector-c
+
 const MYSQL_OK = 0
 
 const ER_ERROR_FIRST = 1000
