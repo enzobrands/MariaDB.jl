@@ -339,7 +339,7 @@ type MYSQL_FIELD
     field_type::MYSQL_FIELD_TYPE
 end
 
-MYSQL_FIELD() = MYSQL_FIELD("", "", "", "", "", 0, 0, 0, 0, 0, 0)
+MYSQL_FIELD() = MYSQL_FIELD("", "", "", "", "", 0, 0, 0, 0, 0, MYSQL_FIELD_TYPE(0))
 function MYSQL_FIELD(c_mysql_field::_MYSQL_FIELD_)
     MYSQL_FIELD(
         @c_str_2_str(c_mysql_field.name),
@@ -354,7 +354,7 @@ function MYSQL_FIELD(c_mysql_field::_MYSQL_FIELD_)
         c_mysql_field.flags,
         c_mysql_field.decimals,
         c_mysql_field.charsetnr,
-        c_mysql_field.field_type
+        MYSQL_FIELD_TYPE(c_mysql_field.field_type)
     )
 end
 

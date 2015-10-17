@@ -305,9 +305,9 @@ function mysql_fetch_row(result::MYSQL_RES)
     row = Vector{MDB_COLUMN}()
     ptr = ccall( (:mysql_fetch_row, mariadb_lib), Ptr{Ptr{UInt8}}, (Ptr{Void},), result.ptr)
     ptr == C_NULL &&
-        return row
-    fields = mysql_fetch_fields(result.ptr)
-    lengths = mysql_fetch_lengths(result.ptr)
+        return Void
+    fields = mysql_fetch_fields(result)
+    lengths = mysql_fetch_lengths(result)
     for i in 1:length(fields)
         # Get Ptr{UInt8}
         colptr = unsafe_load(ptr,i)
@@ -338,7 +338,7 @@ The mysql_field_count() function should be used to determine if there is a resul
   *mysql_real_connect()*.
 """
 mysql_field_count(mysql::MYSQL) =
-    ccall( (:mysql_field_count, mariadb_lib), Cuint, (Ptr{Void},), mysql)
+    ccall( (:mysql_field_count, mariadb_lib), Cuint, (Ptr{Void},), mysql.ptr)
 
 """
 # Description
@@ -831,26 +831,26 @@ Returns MYSQL_OK on success, non zero if an error occurred (invalid option or va
 - **option** the option you want to set. See description above.
 - **arg** The value for the option.
 """
-function mysql_options(mysql::MYSQL, option::MYSQL_OPTION, arg::Ptr{Void})
-    if option == MYSQL_PROGRESS_CALLBACK
+function _mysql_options(mysql::MYSQL, option::MYSQL_OPTION, arg::Ptr{Void})
+    option == MYSQL_PROGRESS_CALLBACK &&
         error("Unsupported option: MYSQL_PROGRESS_CALLBACK")
-    end
-    return ccall( (:mysql_options, mariadb_lib), Cint, (Ptr{Void}, Cint, Ptr{Void}),
-                    mysql.ptr, option, arg)
+    ccall( (:mysql_options, mariadb_lib), Cint, (Ptr{Void}, Cint, Ptr{Void}),
+           mysql.ptr, option, arg)
 end
-mysql_options(mysql::MYSQL, option::MYSQL_OPTION) = mysql_options(mysql, option, C_NULL)
-mysql_options(mysql::MYSQL, option::MYSQL_OPTION, arg::ByteString) = mysql_options(
-    mysql, option, @str_2_c_str(arg))
-function mysql_options(mysql::MYSQL, option::MYSQL_OPTION, arg::Int)
-    tmp = Cint[arg]
-    return mysql_options(mysql, option, pointer(tmp))
-end
-function mysql_options(mysql::MYSQL, option::MYSQL_OPTION, arg::UInt)
-    tmp = Cuint[arg]
-    return mysql_optinos(mysql, option, pointer(tmp))
-end
-mysql_options(mysql::MYSQL, optino::MYSQL_OPTION, arg::MYSQL_PROTOCOL_TYPE) = mysql_options(
-    mysql, option, convert(Int, arg))
+
+mysql_options(mysql::MYSQL, option::MYSQL_OPTION) = _mysql_options(mysql, option, C_NULL)
+
+mysql_options(mysql::MYSQL, option::MYSQL_OPTION, arg::ByteString) =
+    _mysql_options(mysql, option, @str_2_c_str(arg))
+
+mysql_options(mysql::MYSQL, option::MYSQL_OPTION, arg::Int) =
+    _mysql_options(mysql, option, pointer(Cint[arg]))
+
+mysql_options(mysql::MYSQL, option::MYSQL_OPTION, arg::UInt) =
+    _mysql_optinos(mysql, option, pointer(Cuint[arg]))
+
+mysql_options(mysql::MYSQL, optino::MYSQL_OPTION, arg::MYSQL_PROTOCOL_TYPE) =
+    mysql_options(mysql, option, convert(Int, arg))
 
 """
 # Description
@@ -933,22 +933,35 @@ handled in the client server protocol.
         stored procedures or multi statements. This option will be automatically set if
         *CLIENT_MULTI_STATEMENTS* is set.
 """
+_mysql_real_connect(mysqlptr::Ptr{Void},
+                    host::Ptr{UInt8} = C_NULL,
+                    user::Ptr{UInt8} = C_NULL,
+                    passwd::Ptr{UInt8} = C_NULL,
+		    db::Ptr{UInt8} = C_NULL,
+                    port::UInt=UInt(0),
+                    unix_socket::Ptr{UInt8} = C_NULL,
+                    flags::UInt32=UInt32(0)) =
+    ccall( (:mysql_real_connect, mariadb_lib), Ptr{Void},
+	   (Ptr{Void}, Ptr{UInt8}, Ptr{UInt8}, Ptr{UInt8},
+            Ptr{UInt8}, Cuint, Ptr{UInt8}, Culong),
+           mysqlptr, host, user,passwd, db, port, unix_socket,flags)
+
 function mysql_real_connect(mysql::MYSQL, host::ByteString, user::ByteString;
                             passwd::ByteString = "",
 		            db::ByteString = "",
-                            port::UInt=UInt(0),
-                            unix_socket::ByteString="",
-                            flags::UInt32=UInt32(0))
-    ret = ccall( (:mysql_real_connect, mariadb_lib), Ptr{Void},
-	         (Ptr{Void}, Ptr{UInt8}, Ptr{UInt8}, Ptr{UInt8},
-                  Ptr{UInt8}, Cuint, Ptr{UInt8}, Culong),
-                 mysql.ptr, @str_2_c_str(host), @str_2_c_str(user),
-                 passwd=@str_2_c_str(passwd),
-                 db=@str_2_c_str(db),
-                 port=port,
-                 unix_socket=@str_2_c_str(unix_socket),
-    		 flags=flags)
+                            port::UInt = UInt(0),
+                            unix_socket::ByteString = "",
+                            flags::UInt32 = UInt32(0))
+    ret = _mysql_real_connect(mysql.ptr,
+                              @str_2_c_str(host),
+                              @str_2_c_str(user),
+                              @str_2_c_str(passwd),
+                              @str_2_c_str(db),
+                              port,
+                              @str_2_c_str(unix_socket),
+    		              flags)
     ret != mysql.ptr && println("mysql_real_connect: $ret != $(mysql.ptr)")
+    mysql.ptr = ret
     mysql
 end
 
@@ -1257,12 +1270,12 @@ to have any effect.
 - **capath** path to the directory containing the trusted SSL CA certificates in PEM format.
 - **cipher** list of permitted ciphers to use for SSL encryption.
 """
-mysql_ssl_set(mysql::MYSQL,
-              key::Ptr{UInt8}=C_NULL,
-              cert::Ptr{UInt8}=C_NULL,
-	      ca::Ptr{UInt8}=C_NULL,
-              capath::Ptr{UInt8}=C_NULL,
-              cipher::Ptr{UInt8}=C_NULL) =
+_mysql_ssl_set(mysql::MYSQL,
+               key::Ptr{UInt8}=C_NULL,
+               cert::Ptr{UInt8}=C_NULL,
+	       ca::Ptr{UInt8}=C_NULL,
+               capath::Ptr{UInt8}=C_NULL,
+               cipher::Ptr{UInt8}=C_NULL) =
     ccall( (:mysql_ssl_set, mariadb_lib), Cchar,
 	   (Ptr{Void}, Ptr{UInt8}, Ptr{UInt8}, Ptr{UInt8}, Ptr{UInt8}, Ptr{UInt8}),
            mysql.ptr, key, cert, ca, capath, cipher)
@@ -1273,12 +1286,12 @@ mysql_ssl_set(mysql::MYSQL,
               ca::ByteString,
               capath::ByteString,
               cipher::ByteString) =
-    mysql_ssl_set(mysql,
-                  @str_2_c_str(key),
-                  @str_2_c_str(cert),
-                  @str_2_c_str(ca),
-                  @str_2_c_str(capath),
-                  @str_2_c_str(cipher))
+    _mysql_ssl_set(mysql,
+                   @str_2_c_str(key),
+                   @str_2_c_str(cert),
+                   @str_2_c_str(ca),
+                   @str_2_c_str(capath),
+                   @str_2_c_str(cipher))
 
 """
 # Description
@@ -1390,7 +1403,7 @@ current connection until all result sets are retrieved or result set was release
   *mysql_real_connect()*.
 """
 mysql_use_result(mysql::MYSQL) =
-    ccall( (:mysql_use_result, mariadb_lib), Ptr{Void}, (Ptr{Void},), mysql.ptr)
+    MYSQL_RES(ccall( (:mysql_use_result, mariadb_lib), Ptr{Void}, (Ptr{Void},), mysql.ptr))
 
 """
 # Description
