@@ -99,7 +99,11 @@ Closes a previously opened connection.
 - **mysql** a mysql handle, identifier, which was previously allocated by *mysql_init()* or
   *mysql_real_connect()*.
 """
-mysql_close(mysql::MYSQL) = ccall( (:mysql_close, mariadb_lib), Void, (Ptr{Void},), mysql.ptr)
+function mysql_close(mysql::MYSQL)
+    mysql.ptr == C_NULL && return
+    ccall( (:mysql_close, mariadb_lib), Void, (Ptr{Void},), mysql.ptr)
+    mysql.ptr = C_NULL
+end
 
 """
 # Description
@@ -381,8 +385,11 @@ Row values obtained by a prior *mysql_fetch_row()* call will become invalid afte
 
 - **result** a result set identifier returned by *mysql_store_result()* or *mysql_use_result()*.
 """
-mysql_free_result(result::MYSQL_RES) =
+function mysql_free_result(result::MYSQL_RES)
+    result.ptr == C_NULL && return
     ccall( (:mysql_free_result, mariadb_lib), Void, (Ptr{Void},), result.ptr)
+    result.ptr = C_NULL
+end
 
 """
 # Description
@@ -556,7 +563,7 @@ Any subsequent calls to any mysql function (except *mysql_options()*) will fail 
 *mysql_real_connect()* was called.
 Memory allocated by **mysql_init()** must be freed with *mysql_close()*.
 """
-mysql_init() = ccall( (:mysql_init, mariadb_lib), MYSQL, (Ptr{Void},), C_NULL)
+mysql_init() = MYSQL(ccall( (:mysql_init, mariadb_lib), Ptr{Void}, (Ptr{Void},), C_NULL))
 
 """
 # Descriiption
@@ -926,28 +933,24 @@ handled in the client server protocol.
         stored procedures or multi statements. This option will be automatically set if
         *CLIENT_MULTI_STATEMENTS* is set.
 """
-mysql_real_connect(mysql::MYSQL, host::Ptr{UInt8}, user::Ptr{UInt8};
-                   passwd::Ptr{UInt8} = C_NULL,
-                   db::Ptr{UInt8} = C_NULL,
-                   port::UInt = 0,
-                   unix_socket::Ptr{UInt8} = C_NULL,
-                   flags::UInt32 = 0) =
-    ccall( (:mysql_real_connect, mariadb_lib), Ptr{Void},
-	   (Ptr{Void}, Ptr{UInt8}, Ptr{UInt8}, Ptr{UInt8}, Ptr{UInt8}, Cuint, Ptr{UInt8}, Culong),
-           mysql.ptr, host, user, passwd, db, port, unix_socket, flags)
-
-mysql_real_connect(mysql::MYSQL, host::ByteString, user::ByteString;
-                   passwd::ByteString = "",
-		   db::ByteString = "",
-                   port::UInt=UInt(0),
-                   unix_socket::ByteString="",
-                   flags::UInt32=UInt32(0)) =
-    mysql_real_connect(mysql, @str_2_c_str(host), @str_2_c_str(user),
-                        passwd=@str_2_c_str(passwd),
-                        db=@str_2_c_str(db),
-                        port=port,
-                        unix_socket=@str_2_c_str(unix_socket),
-                        flags=flags)
+function mysql_real_connect(mysql::MYSQL, host::ByteString, user::ByteString;
+                            passwd::ByteString = "",
+		            db::ByteString = "",
+                            port::UInt=UInt(0),
+                            unix_socket::ByteString="",
+                            flags::UInt32=UInt32(0))
+    ret = ccall( (:mysql_real_connect, mariadb_lib), Ptr{Void},
+	         (Ptr{Void}, Ptr{UInt8}, Ptr{UInt8}, Ptr{UInt8},
+                  Ptr{UInt8}, Cuint, Ptr{UInt8}, Culong),
+                 mysql.ptr, @str_2_c_str(host), @str_2_c_str(user),
+                 passwd=@str_2_c_str(passwd),
+                 db=@str_2_c_str(db),
+                 port=port,
+                 unix_socket=@str_2_c_str(unix_socket),
+    		 flags=flags)
+    ret != mysql.ptr && println("mysql_real_connect: $ret != $(mysql.ptr)")
+    mysql
+end
 
 """
 # Description

@@ -8,12 +8,12 @@ export MYSQL, MYSQL_RES, MYSQL_ROW, MYSQL_FIELD_OFFSET, MYSQL_ROW_OFFSET
 
 type MYSQL
     ptr::Ptr{Void}
-    MYSQL(p) = (val = new(p) ; finalizer(val, finalizer!) ; val)
+    MYSQL(p) = (val = new(p) ; finalizer(val, mysql_close) ; val)
 end
 
 type MYSQL_RES
     ptr::Ptr{Void}
-    MYSQL_RES(p) = (val = new(p) ; finalizer(val, finalizer!) ; val)
+    MYSQL_RES(p) = (val = new(p) ; finalizer(val, mysql_free_result) ; val)
 end
 
 immutable MYSQL_ROW
@@ -24,9 +24,8 @@ immutable MYSQL_FIELD_OFFSET
     off::UInt32
 end
 
-type MYSQL_ROW_OFFSET
+immutable MYSQL_ROW_OFFSET
     ptr::Ptr{Void}
-    MYSQL_ROW_OFFSET(p) = (val = new(p) ; finalizer(val, finalizer!) ; val)
 end
 
 immutable MYSQL_FIELD_TYPE
