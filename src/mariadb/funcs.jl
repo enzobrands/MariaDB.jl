@@ -314,10 +314,10 @@ function mysql_fetch_row(result::MYSQL_RES)
         colptr = unsafe_load(ptr,i)
         if colptr == C_NULL
             push!(row, nothing)
-        elseif fields[i].field_type in NULL_TERMINATED
-            push!(row, bytestring(pointer_to_array(colptr, lengths[i])))
-        else
+        elseif fields[i].charsetnr == 63
             push!(row, pointer_to_array(colptr, lengths[i]))
+        else
+            push!(row, bytestring(pointer_to_array(colptr, lengths[i])))
         end
     end
     return row
