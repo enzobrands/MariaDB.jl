@@ -279,29 +279,6 @@ Returns empty vector if no row is available.
 # TODO columns to their appropriate Julia types, for now return null terminated as ByteString and not null terminated as Vector{UInt8}
 typealias MDB_COLUMN Union{Vector{UInt8}, ByteString}
 
-const NULL_TERMINATED = [ MYSQL_TYPE_TINY, 
-    MYSQL_TYPE_SHORT, 
-    MYSQL_TYPE_LONG, 
-    MYSQL_TYPE_INT24, 
-    MYSQL_TYPE_LONGLONG, 
-    MYSQL_TYPE_DECIMAL, 
-    MYSQL_TYPE_NEWDECIMAL, 
-    MYSQL_TYPE_FLOAT, 
-    MYSQL_TYPE_DOUBLE, 
-    MYSQL_TYPE_BIT, 
-    MYSQL_TYPE_TIMESTAMP, 
-    MYSQL_TYPE_TIMESTAMP2,
-    MYSQL_TYPE_DATE, 
-    MYSQL_TYPE_TIME, 
-    MYSQL_TYPE_TIME2,
-    MYSQL_TYPE_DATETIME, 
-    MYSQL_TYPE_DATETIME2,
-    MYSQL_TYPE_YEAR, 
-    MYSQL_TYPE_NOWDATE,
-    MYSQL_TYPE_VARCHAR,
-    MYSQL_TYPE_VAR_STRING,
-    MYSQL_TYPE_NULL ]
-
 function mysql_fetch_row(result::MYSQL_RES)
     row = Vector{MDB_COLUMN}()
     ptr = ccall( (:mysql_fetch_row, mariadb_lib), Ptr{Ptr{UInt8}}, (Ptr{Void},), result.ptr)
