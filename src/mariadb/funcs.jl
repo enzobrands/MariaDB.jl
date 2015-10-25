@@ -266,7 +266,7 @@ where each column is stored in an offset starting from 1 (one). Each subsequent 
 function will return the next row within the result set, or an empty array if there are no more
 rows.
 
-If a column contains a NULL value the corresponding element will be set to the empty string ("").
+If a column contains a NULL value the corresponding element will be set to Void().
 Memory associated to MYSQL_ROW will be freed when calling mysql_free_result() function.
 
 Returns empty vector if no row is available.
@@ -276,26 +276,59 @@ Returns empty vector if no row is available.
 - **result** a result set identifier returned by *mysql_store_result()* or *mysql_use_result()*.
 """
 
-# TODO columns to their appropriate Julia types, for now return null terminated as ByteString and not null terminated as Vector{UInt8}
-typealias MDB_COLUMN Union{Vector{UInt8}, ByteString}
-
 function mysql_fetch_row(result::MYSQL_RES)
-    row = Vector{MDB_COLUMN}()
+    row = Vector{Any}()
     ptr = ccall( (:mysql_fetch_row, mariadb_lib), Ptr{Ptr{UInt8}}, (Ptr{Void},), result.ptr)
     ptr == C_NULL &&
-        return Void
+        return row
     fields = mysql_fetch_fields(result)
     lengths = mysql_fetch_lengths(result)
     for i in 1:length(fields)
         # Get Ptr{UInt8}
         colptr = unsafe_load(ptr,i)
         if colptr == C_NULL
-            push!(row, nothing)
-        elseif fields[i].charsetnr == 63
-            push!(row, pointer_to_array(colptr, lengths[i]))
-        else
-            push!(row, bytestring(pointer_to_array(colptr, lengths[i])))
+            push!(row, Void())
+            continue
         end
+        if fields[i].charsetnr == MYSQL_BINARY
+            if fields[i].flags & UNSIGNED_FLAG == UNSIGNED_FLAG
+                if fields[i].field_type == MYSQL_TYPE_TINY
+                    push!(row, parse(UInt8, bytestring(pointer_to_array(colptr, lengths[i]))))
+                elseif fields[i].field_type == MYSQL_TYPE_SHORT
+                    push!(row, parse(UInt16, bytestring(pointer_to_array(colptr, lengths[i]))))
+                elseif fields[i].field_type == MYSQL_TYPE_INT24
+                    push!(row, parse(UInt32, bytestring(pointer_to_array(colptr, lengths[i]))))
+                elseif fields[i].field_type == MYSQL_TYPE_LONG
+                    push!(row, parse(UInt32, bytestring(pointer_to_array(colptr, lengths[i]))))
+                elseif fields[i].field_type == MYSQL_TYPE_LONGLONG
+                    push!(row, parse(UInt64, bytestring(pointer_to_array(colptr, lengths[i]))))
+                end
+                continue
+            end
+            if fields[i].field_type == MYSQL_TYPE_TINY
+                    push!(row, parse(Int8, bytestring(pointer_to_array(colptr, lengths[i]))))
+            elseif fields[i].field_type == MYSQL_TYPE_SHORT
+                    push!(row, parse(Int16, bytestring(pointer_to_array(colptr, lengths[i]))))
+            elseif fields[i].field_type == MYSQL_TYPE_INT24
+                    push!(row, parse(Int32, bytestring(pointer_to_array(colptr, lengths[i]))))
+            elseif fields[i].field_type == MYSQL_TYPE_LONG
+                    push!(row, parse(Int32, bytestring(pointer_to_array(colptr, lengths[i]))))
+            elseif fields[i].field_type == MYSQL_TYPE_LONGLONG
+                    push!(row, parse(Int64, bytestring(pointer_to_array(colptr, lengths[i]))))
+            elseif fields[i].field_type == MYSQL_TYPE_FLOAT
+                    push!(row, parse(Float32, bytestring(pointer_to_array(colptr, lengths[i]))))
+            elseif fields[i].field_type == MYSQL_TYPE_DOUBLE
+                    push!(row, parse(Float64, bytestring(pointer_to_array(colptr, lengths[i]))))
+            elseif fields[i].field_type in MYSG_TYPE_STRINGS
+                push!(row, pointer_to_array(colptr, lengths[i]))
+            elseif fields[i].field_type == MYSQL_TYPE_YEAR
+                push!(row, bytestring(pointer_to_array(colptr, lengths[i])))
+            else
+                push!(row, bytestring(pointer_to_array(colptr, lengths[i])))
+            end
+            continue
+        end
+        push!(row, bytestring(pointer_to_array(colptr, lengths[i])))
     end
     return row
 end
