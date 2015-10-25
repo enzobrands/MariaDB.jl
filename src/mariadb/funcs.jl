@@ -321,8 +321,6 @@ function mysql_fetch_row(result::MYSQL_RES)
                     push!(row, parse(Float64, bytestring(pointer_to_array(colptr, lengths[i]))))
             elseif fields[i].field_type in MYSG_TYPE_STRINGS
                 push!(row, pointer_to_array(colptr, lengths[i]))
-            elseif fields[i].field_type == MYSQL_TYPE_YEAR
-                push!(row, bytestring(pointer_to_array(colptr, lengths[i])))
             else
                 push!(row, bytestring(pointer_to_array(colptr, lengths[i])))
             end

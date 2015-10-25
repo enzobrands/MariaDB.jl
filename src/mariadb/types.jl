@@ -4,7 +4,7 @@
 # The Julia wrapper types are:
 # Copyright (c) 2015 Dynactionize NV
 
-export MYSQL, MYSQL_RES, MYSQL_ROW, MYSQL_FIELD_OFFSET, MYSQL_ROW_OFFSET, MYSQL_TYPE_BINARY_SIGNED
+export MYSQL, MYSQL_RES, MYSQL_ROW, MYSQL_FIELD_OFFSET, MYSQL_ROW_OFFSET
 
 type MYSQL
     ptr::Ptr{Void}
