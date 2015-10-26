@@ -32,6 +32,9 @@ immutable MYSQL_FIELD_TYPE
     typ::UInt8
 end
 
+immutable MYSQL_FIELD_JULIA_TYPE
+    typ::DataType
+end
 
 export MYSQL_FIELD_TYPE
 export MYSQL_TYPE_DECIMAL, MYSQL_TYPE_TINY, MYSQL_TYPE_SHORT, MYSQL_TYPE_LONG, MYSQL_TYPE_FLOAT,
@@ -72,6 +75,112 @@ const MYSQL_TYPE_BLOB           = MYSQL_FIELD_TYPE(252)
 const MYSQL_TYPE_VAR_STRING     = MYSQL_FIELD_TYPE(253)
 const MYSQL_TYPE_STRING         = MYSQL_FIELD_TYPE(254)
 const MYSQL_TYPE_GEOMETRY       = MYSQL_FIELD_TYPE(255)
+
+type MYSQL_TYPE_JULIA_DECIMAL
+    val::ByteString
+
+    MYSQL_TYPE_JULIA_DECIMAL(val::ByteString) = new(val)
+    MYSQL_TYPE_JULIA_DECIMAL(val::Vector{UInt8}) = new(bytestring(val))
+end
+
+type MYSQL_TYPE_JULIA_TIMESTAMP
+    val::ByteString
+    
+    MYSQL_TYPE_JULIA_TIMESTAMP(val::ByteString) = new(val)
+    MYSQL_TYPE_JULIA_TIMESTAMP(val::Vector{UInt8}) = new(bytestring(val))
+end
+
+type MYSQL_TYPE_JULIA_DATE
+    val::ByteString
+    
+    MYSQL_TYPE_JULIA_DATE(val::ByteString) = new(val)
+    MYSQL_TYPE_JULIA_DATE(val::Vector{UInt8}) = new(bytestring(val))
+end
+
+type MYSQL_TYPE_JULIA_TIME
+    val::ByteString
+    
+    MYSQL_TYPE_JULIA_TIME(val::ByteString) = new(val)
+    MYSQL_TYPE_JULIA_TIME(val::Vector{UInt8}) = new(bytestring(val))
+end
+
+type MYSQL_TYPE_JULIA_DATETIME
+    val::ByteString
+    
+    MYSQL_TYPE_JULIA_DATETIME(val::ByteString) = new(val)
+    MYSQL_TYPE_JULIA_DATETIME(val::Vector{UInt8}) = new(bytestring(val))
+end
+
+type MYSQL_TYPE_JULIA_YEAR
+    val::ByteString
+    
+    MYSQL_TYPE_JULIA_YEAR(val::ByteString) = new(val)
+    MYSQL_TYPE_JULIA_YEAR(val::Vector{UInt8}) = new(bytestring(val))
+end
+
+type MYSQL_TYPE_JULIA_VARCHAR
+    val::ByteString
+end
+
+type MYSQL_TYPE_JULIA_CHAR
+    val::ByteString
+end
+
+type MYSQL_TYPE_JULIA_BIT
+    val::ByteString
+end
+
+type MYSQL_TYPE_JULIA_ENUM
+    val::ByteString
+end
+
+type MYSQL_TYPE_JULIA_SET
+    val::ByteString
+end
+
+type MYSQL_TYPE_JULIA_TINY_BLOB
+    val::Vector{UInt8}
+end
+
+type MYSQL_TYPE_JULIA_MEDIUM_BLOB
+    val::Vector{UInt8}
+end
+
+type MYSQL_TYPE_JULIA_LONG_BLOB
+    val::Vector{UInt8}
+end
+
+type MYSQL_TYPE_JULIA_BLOB
+    val::Vector{UInt8}
+end
+
+type MYSQL_TYPE_JULIA_TINY_TEXT
+    val::Vector{UInt8}
+end
+
+type MYSQL_TYPE_JULIA_MEDIUM_TEXT
+    val::Vector{UInt8}
+end
+
+type MYSQL_TYPE_JULIA_LONG_TEXT
+    val::Vector{UInt8}
+end
+
+type MYSQL_TYPE_JULIA_TEXT
+    val::Vector{UInt8}
+end
+
+type MYSQL_TYPE_JULIA_VARBINARY
+    val::Vector{UInt8}
+end
+
+type MYSQL_TYPE_JULIA_BINARY
+    val::Vector{UInt8}
+end
+
+type MYSQL_TYPE_JULIA_GEOMETRY
+    val::ByteString
+end
 
 #TODO add all charsets
 const MYSQL_CHAR_SET_BINARY              = 63
@@ -347,9 +456,125 @@ type MYSQL_FIELD
     decimals::UInt
     charsetnr::UInt
     field_type::MYSQL_FIELD_TYPE
+    field_julia_type::DataType
 end
 
-MYSQL_FIELD() = MYSQL_FIELD("", "", "", "", "", 0, 0, 0, 0, 0, MYSQL_FIELD_TYPE(0))
+const BINARY_PARSE_TYPES = Union{
+    UInt8,
+    UInt16,
+    UInt32,
+    UInt64,
+    Int8,
+    Int16,
+    Int32,
+    Int64,
+    Float32,
+    Float64
+}
+    
+const BINARY_NO_PARSE_TYPES = Union{
+    MYSQL_TYPE_JULIA_TINY_BLOB,
+    MYSQL_TYPE_JULIA_MEDIUM_BLOB,
+    MYSQL_TYPE_JULIA_LONG_BLOB,  
+    MYSQL_TYPE_JULIA_BLOB, 
+    MYSQL_TYPE_JULIA_VARBINARY,
+    MYSQL_TYPE_JULIA_VARBINARY,
+    MYSQL_TYPE_JULIA_BINARY
+}
+
+const NO_BINARY_NO_PARSE_TYPES = Union{
+    MYSQL_TYPE_JULIA_TINY_TEXT,
+    MYSQL_TYPE_JULIA_MEDIUM_TEXT,
+    MYSQL_TYPE_JULIA_LONG_TEXT,  
+    MYSQL_TYPE_JULIA_TEXT, 
+    MYSQL_TYPE_JULIA_VARCHAR,
+    MYSQL_TYPE_JULIA_VARCHAR,
+    MYSQL_TYPE_JULIA_CHAR,
+    MYSQL_TYPE_JULIA_DECIMAL,
+    MYSQL_TYPE_JULIA_TIMESTAMP,    
+    MYSQL_TYPE_JULIA_DATE,
+    MYSQL_TYPE_JULIA_TIME,  
+    MYSQL_TYPE_JULIA_DATETIME,
+    MYSQL_TYPE_JULIA_YEAR,    
+    MYSQL_TYPE_JULIA_DATETIME,
+    MYSQL_TYPE_JULIA_VARCHAR,
+    MYSQL_TYPE_JULIA_BIT,
+    MYSQL_TYPE_JULIA_TIMESTAMP,  
+    MYSQL_TYPE_JULIA_DATETIME,
+    MYSQL_TYPE_JULIA_TIME,   
+    MYSQL_TYPE_JULIA_DECIMAL,
+    MYSQL_TYPE_JULIA_ENUM,
+    MYSQL_TYPE_JULIA_SET,
+    MYSQL_TYPE_JULIA_GEOMETRY
+}
+
+const MYSQL_TYPES_JULIA_BINARY_UNSIGNED = Dict(
+    MYSQL_TYPE_TINY => UInt8,
+    MYSQL_TYPE_SHORT => UInt16,
+    MYSQL_TYPE_INT24 => UInt32,
+    MYSQL_TYPE_LONG => UInt32,    
+    MYSQL_TYPE_LONGLONG => UInt64,
+    MYSQL_TYPE_TIMESTAMP => MYSQL_TYPE_JULIA_TIMESTAMP,
+    MYSQL_TYPE_TIMESTAMP2 => MYSQL_TYPE_JULIA_TIMESTAMP,  
+    MYSQL_TYPE_NOWDATE => MYSQL_TYPE_JULIA_DATETIME,
+    MYSQL_TYPE_YEAR => MYSQL_TYPE_JULIA_YEAR
+)
+
+const MYSQL_TYPES_JULIA_BINARY_SIGNED = Dict(
+    MYSQL_TYPE_TINY => Int8,
+    MYSQL_TYPE_SHORT => Int16,
+    MYSQL_TYPE_INT24 => Int32,
+    MYSQL_TYPE_LONG => Int32,    
+    MYSQL_TYPE_LONGLONG => Int64,
+    MYSQL_TYPE_FLOAT => Float32,
+    MYSQL_TYPE_DOUBLE => Float64, 
+    MYSQL_TYPE_TINY_BLOB => MYSQL_TYPE_JULIA_TINY_BLOB,
+    MYSQL_TYPE_MEDIUM_BLOB => MYSQL_TYPE_JULIA_MEDIUM_BLOB,
+    MYSQL_TYPE_LONG_BLOB => MYSQL_TYPE_JULIA_LONG_BLOB,  
+    MYSQL_TYPE_BLOB => MYSQL_TYPE_JULIA_BLOB, 
+    MYSQL_TYPE_VAR_STRING => MYSQL_TYPE_JULIA_VARBINARY,
+    MYSQL_TYPE_VARCHAR => MYSQL_TYPE_JULIA_VARBINARY,
+    MYSQL_TYPE_STRING => MYSQL_TYPE_JULIA_BINARY
+)
+
+const MYSQL_TYPES_JULIA_NO_BINARY = Dict(
+    MYSQL_TYPE_TINY_BLOB => MYSQL_TYPE_JULIA_TINY_TEXT,
+    MYSQL_TYPE_MEDIUM_BLOB => MYSQL_TYPE_JULIA_MEDIUM_TEXT,
+    MYSQL_TYPE_LONG_BLOB => MYSQL_TYPE_JULIA_LONG_TEXT,  
+    MYSQL_TYPE_BLOB => MYSQL_TYPE_JULIA_TEXT, 
+    MYSQL_TYPE_VAR_STRING => MYSQL_TYPE_JULIA_VARCHAR,
+    MYSQL_TYPE_VARCHAR => MYSQL_TYPE_JULIA_VARCHAR,
+    MYSQL_TYPE_STRING => MYSQL_TYPE_JULIA_CHAR,
+    MYSQL_TYPE_DECIMAL => MYSQL_TYPE_JULIA_DECIMAL,
+    MYSQL_TYPE_NEWDECIMAL => MYSQL_TYPE_JULIA_DECIMAL,
+    MYSQL_TYPE_NULL => Void,
+    MYSQL_TYPE_DATE => MYSQL_TYPE_JULIA_DATE,
+    MYSQL_TYPE_TIME => MYSQL_TYPE_JULIA_TIME,  
+    MYSQL_TYPE_DATETIME => MYSQL_TYPE_JULIA_DATETIME,
+    MYSQL_TYPE_VAR_STRING => MYSQL_TYPE_JULIA_VARCHAR,
+    MYSQL_TYPE_VARCHAR => MYSQL_TYPE_JULIA_VARCHAR,
+    MYSQL_TYPE_BIT => MYSQL_TYPE_JULIA_BIT,
+    MYSQL_TYPE_DATETIME2 => MYSQL_TYPE_JULIA_DATETIME,
+    MYSQL_TYPE_TIME2 => MYSQL_TYPE_JULIA_TIME,   
+    MYSQL_TYPE_NEWDECIMAL => MYSQL_TYPE_JULIA_DECIMAL,
+    MYSQL_TYPE_ENUM => MYSQL_TYPE_JULIA_ENUM,
+    MYSQL_TYPE_SET => MYSQL_TYPE_JULIA_SET,
+    MYSQL_TYPE_GEOMETRY => MYSQL_TYPE_JULIA_GEOMETRY
+) 
+
+function map_sql_type(typ, csn, fla)
+    if csn == MYSQL_CHAR_SET_BINARY
+        if fla & UNSIGNED_FLAG == UNSIGNED_FLAG
+            return MYSQL_TYPES_JULIA_BINARY_UNSIGNED[MYSQL_FIELD_TYPE(typ)]
+        end
+        if haskey(MYSQL_TYPES_JULIA_BINARY_SIGNED, MYSQL_FIELD_TYPE(typ))
+            return MYSQL_TYPES_JULIA_BINARY_SIGNED[MYSQL_FIELD_TYPE(typ)]
+        end
+    end
+    return MYSQL_TYPES_JULIA_NO_BINARY[MYSQL_FIELD_TYPE(typ)]
+end   
+
+MYSQL_FIELD() = MYSQL_FIELD("", "", "", "", "", 0, 0, 0, 0, 0, Void)
 function MYSQL_FIELD(c_mysql_field::_MYSQL_FIELD_)
     MYSQL_FIELD(
         @c_str_2_str(c_mysql_field.name),
@@ -364,7 +589,8 @@ function MYSQL_FIELD(c_mysql_field::_MYSQL_FIELD_)
         c_mysql_field.flags,
         c_mysql_field.decimals,
         c_mysql_field.charsetnr,
-        MYSQL_FIELD_TYPE(c_mysql_field.field_type)
+        MYSQL_FIELD_TYPE(c_mysql_field.field_type),
+        map_sql_type(c_mysql_field.field_type, c_mysql_field.charsetnr, c_mysql_field.flags)
     )
 end
 

@@ -290,43 +290,13 @@ function mysql_fetch_row(result::MYSQL_RES)
             push!(row, Void())
             continue
         end
-        if fields[i].charsetnr == MYSQL_CHAR_SET_BINARY
-            if fields[i].flags & UNSIGNED_FLAG == UNSIGNED_FLAG
-                if fields[i].field_type == MYSQL_TYPE_TINY
-                    push!(row, parse(UInt8, bytestring(pointer_to_array(colptr, lengths[i]))))
-                elseif fields[i].field_type == MYSQL_TYPE_SHORT
-                    push!(row, parse(UInt16, bytestring(pointer_to_array(colptr, lengths[i]))))
-                elseif fields[i].field_type == MYSQL_TYPE_INT24
-                    push!(row, parse(UInt32, bytestring(pointer_to_array(colptr, lengths[i]))))
-                elseif fields[i].field_type == MYSQL_TYPE_LONG
-                    push!(row, parse(UInt32, bytestring(pointer_to_array(colptr, lengths[i]))))
-                elseif fields[i].field_type == MYSQL_TYPE_LONGLONG
-                    push!(row, parse(UInt64, bytestring(pointer_to_array(colptr, lengths[i]))))
-                end
-                continue
-            end
-            if fields[i].field_type == MYSQL_TYPE_TINY
-                    push!(row, parse(Int8, bytestring(pointer_to_array(colptr, lengths[i]))))
-            elseif fields[i].field_type == MYSQL_TYPE_SHORT
-                    push!(row, parse(Int16, bytestring(pointer_to_array(colptr, lengths[i]))))
-            elseif fields[i].field_type == MYSQL_TYPE_INT24
-                    push!(row, parse(Int32, bytestring(pointer_to_array(colptr, lengths[i]))))
-            elseif fields[i].field_type == MYSQL_TYPE_LONG
-                    push!(row, parse(Int32, bytestring(pointer_to_array(colptr, lengths[i]))))
-            elseif fields[i].field_type == MYSQL_TYPE_LONGLONG
-                    push!(row, parse(Int64, bytestring(pointer_to_array(colptr, lengths[i]))))
-            elseif fields[i].field_type == MYSQL_TYPE_FLOAT
-                    push!(row, parse(Float32, bytestring(pointer_to_array(colptr, lengths[i]))))
-            elseif fields[i].field_type == MYSQL_TYPE_DOUBLE
-                    push!(row, parse(Float64, bytestring(pointer_to_array(colptr, lengths[i]))))
-            elseif fields[i].field_type in MYSG_TYPE_STRINGS
-                push!(row, pointer_to_array(colptr, lengths[i]))
-            else
-                push!(row, bytestring(pointer_to_array(colptr, lengths[i])))
-            end
-            continue
+        if fields[i].field_julia_type <: BINARY_PARSE_TYPES
+            push!(row, parse(fields[i].field_julia_type, bytestring(pointer_to_array(colptr, lengths[i]))))
+        elseif fields[i].field_julia_type <: BINARY_NO_PARSE_TYPES
+            push!(row, fields[i].field_julia_type(pointer_to_array(colptr, lengths[i])))
+        elseif fields[i].field_julia_type <: NO_BINARY_NO_PARSE_TYPES
+            push!(row, fields[i].field_julia_type(bytestring(pointer_to_array(colptr, lengths[i]))))
         end
-        push!(row, bytestring(pointer_to_array(colptr, lengths[i])))
     end
     return row
 end
