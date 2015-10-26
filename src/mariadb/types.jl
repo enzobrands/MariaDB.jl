@@ -517,7 +517,7 @@ const NO_BINARY_NO_PARSE_TYPES = Union{
 }
 
 function __init__()
-    const MYSQL_TYPES_JULIA_BINARY_UNSIGNED = Dict(
+    const global MYSQL_TYPES_JULIA_BINARY_UNSIGNED = Dict(
         MYSQL_TYPE_TINY => UInt8,
         MYSQL_TYPE_SHORT => UInt16,
         MYSQL_TYPE_INT24 => UInt32,
@@ -529,7 +529,7 @@ function __init__()
         MYSQL_TYPE_YEAR => MYSQL_TYPE_JULIA_YEAR
     )
 
-    const MYSQL_TYPES_JULIA_BINARY_SIGNED = Dict(
+    const global MYSQL_TYPES_JULIA_BINARY_SIGNED = Dict(
         MYSQL_TYPE_TINY => Int8,
         MYSQL_TYPE_SHORT => Int16,
         MYSQL_TYPE_INT24 => Int32,
@@ -546,7 +546,7 @@ function __init__()
         MYSQL_TYPE_STRING => MYSQL_TYPE_JULIA_BINARY
     )
 
-    const MYSQL_TYPES_JULIA_NO_BINARY = Dict(
+    const global MYSQL_TYPES_JULIA_NO_BINARY = Dict(
         MYSQL_TYPE_TINY_BLOB => MYSQL_TYPE_JULIA_TINY_TEXT,
         MYSQL_TYPE_MEDIUM_BLOB => MYSQL_TYPE_JULIA_MEDIUM_TEXT,
         MYSQL_TYPE_LONG_BLOB => MYSQL_TYPE_JULIA_LONG_TEXT,  
