@@ -19,7 +19,6 @@ end
 
 function create_test_database()
     mysql = connect_to_database("root", "", "")
-
     cmd = """create database db_test;
              alter database db_test DEFAULT CHARACTER SET = utf8mb4;
              alter database db_test DEFAULT COLLATE = utf8mb4_unicode_ci;
@@ -48,28 +47,23 @@ end
 
 function prepare_database()
     mysql = connect_to_database("root", "", "")
-
     # Check to see if we already have a database 'db_test'
     command = "show databases like 'db_test';"
     rc = mysql_real_query(mysql, command)
     rc != MYSQL_OK && println(mysql_error(mysql))
     @test rc == MYSQL_OK
-
     fc = mysql_field_count(mysql)
     @test fc == 1
-
     reshndl = mysql_use_result(mysql)
     @test reshndl.ptr != C_NULL
-
     rowCount = 0
-    while mysql_fetch_row(reshndl) != Void
+    while length(mysql_fetch_row(reshndl)) != 0
         rowCount += 1
     end
 
     mysql_free_result(reshndl)
 
     mysql_close(mysql)
-
     if rowCount > 0
         println("Database 'db_test' found")
         println("\tRecreating...")
@@ -235,10 +229,9 @@ function print_fields(fields::Vector{MYSQL_FIELD})
         end
     end
 
-function print_row(row::Vector{MariaDB.MDB_COLUMN})
-    print("| ")
+function print_row(row::Vector{Any})
     for c in row
-        print(bytestring(c)," | ")
+        print(c," | ")
     end
     println("")
 end
@@ -248,7 +241,7 @@ function print_result(mysql::MYSQL)
     fields = mysql_fetch_fields(reshndl)
     print_fields(fields)
     row = mysql_fetch_row(reshndl)
-    while row != Void
+    while length(row) != 0
         print_row(row)
         row = mysql_fetch_row(reshndl)
     end
