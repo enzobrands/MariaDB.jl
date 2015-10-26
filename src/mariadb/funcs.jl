@@ -290,7 +290,7 @@ function mysql_fetch_row(result::MYSQL_RES)
             push!(row, Void())
             continue
         end
-        if fields[i].charsetnr == MYSQL_BINARY
+        if fields[i].charsetnr == MYSQL_CHAR_SET_BINARY
             if fields[i].flags & UNSIGNED_FLAG == UNSIGNED_FLAG
                 if fields[i].field_type == MYSQL_TYPE_TINY
                     push!(row, parse(UInt8, bytestring(pointer_to_array(colptr, lengths[i]))))

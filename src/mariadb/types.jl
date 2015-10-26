@@ -73,7 +73,8 @@ const MYSQL_TYPE_VAR_STRING     = MYSQL_FIELD_TYPE(253)
 const MYSQL_TYPE_STRING         = MYSQL_FIELD_TYPE(254)
 const MYSQL_TYPE_GEOMETRY       = MYSQL_FIELD_TYPE(255)
 
-const MYSQL_BINARY              = 63
+#TODO add all charsets
+const MYSQL_CHAR_SET_BINARY              = 63
     
 MYSG_TYPE_STRINGS = (
     MYSQL_TYPE_TINY_BLOB,
